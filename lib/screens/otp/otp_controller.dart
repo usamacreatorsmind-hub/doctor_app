@@ -1,0 +1,212 @@
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../Repository/auth_repository.dart';
+import '../../Repository/FirestoreService.dart';
+import '../../models/user_model.dart';
+import '../../models/patient_profile_model.dart';
+import '../../utils/app_routes.dart';
+import '../Login/login_controller.dart' show LoginRole;
+
+class OtpController extends GetxController {
+  final AuthRepository _authRepository = AuthRepository();
+  final FirestoreService _firestoreService = FirestoreService();
+
+  late String mobileNumber;
+  late LoginRole role;
+  late bool isLogin;
+  bool isForgotPassword = false;
+  String? verificationId;
+  
+  String? name, email, password, dob, gender, bloodGroup;
+
+  final List<TextEditingController> otpControllers = List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> focusNodes = List.generate(6, (_) => FocusNode());
+
+  final RxInt timerSeconds = 30.obs;
+  final RxBool canResend = false.obs;
+  Timer? _timer;
+
+  final RxBool isLoading = false.obs;
+  final RxString enteredOtp = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      mobileNumber     = args['mobile'] ?? '';
+      role             = args['role']   ?? LoginRole.patient;
+      isLogin          = args['isLogin'] ?? true;
+      isForgotPassword = args['isForgotPassword'] ?? false;
+      verificationId   = args['verificationId'];
+      
+      if (!isLogin) {
+        name       = args['name'];
+        email      = args['email'];
+        password   = args['password'];
+        dob        = args['dob'];
+        gender     = args['gender'];
+        bloodGroup = args['bloodGroup'];
+      }
+    }
+    _startTimer();
+  }
+
+  void _startTimer() {
+    timerSeconds.value = 30;
+    canResend.value = false;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (timerSeconds.value > 0) timerSeconds.value--;
+      else { canResend.value = true; timer.cancel(); }
+    });
+  }
+
+  String get timerDisplay {
+    final m = timerSeconds.value ~/ 60;
+    final s = timerSeconds.value % 60;
+    return '${m.toString().padLeft(1, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  void onDigitEntered(int index, String value) {
+    if (value.isNotEmpty && index < 5) focusNodes[index + 1].requestFocus();
+    _updateOtp();
+  }
+
+  void onBackspace(int index) {
+    if (otpControllers[index].text.isEmpty && index > 0) {
+      focusNodes[index - 1].requestFocus();
+      otpControllers[index - 1].clear();
+    }
+    _updateOtp();
+  }
+
+  void _updateOtp() {
+    enteredOtp.value = otpControllers.map((c) => c.text).join();
+    update();
+  }
+
+  bool get isOtpComplete => enteredOtp.value.length == 6;
+
+  Future<void> verifyOtp() async {
+    if (!isOtpComplete) return;
+
+    isLoading.value = true;
+    update();
+
+    try {
+      final phoneAuthCredential = PhoneAuthProvider.credential(
+        verificationId: verificationId!,
+        smsCode: enteredOtp.value,
+      );
+
+      if (isForgotPassword) {
+        // Sign in with Phone to allow password update
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
+        if (userCredential.user != null) {
+          Get.offNamed(AppRoutes.resetPassword);
+        }
+      } else if (isLogin) {
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
+        if (userCredential.user != null) {
+          UserModel? userData = await _firestoreService.getUser(userCredential.user!.uid);
+          if (userData != null) {
+            _navigateAfterVerification(userData.role);
+          } else {
+            Get.snackbar('Error', 'User record not found. Please register.');
+          }
+        }
+      } else {
+        // Registration Flow
+        final emailCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email!,
+          password: password!,
+        );
+
+        if (emailCredential.user != null) {
+          try {
+            await emailCredential.user!.linkWithCredential(phoneAuthCredential);
+          } catch (e) {
+            debugPrint("Phone linking failed: $e");
+          }
+
+          UserModel newUser = UserModel(
+            uid: emailCredential.user!.uid,
+            name: name!,
+            email: email!,
+            mobile: mobileNumber,
+            role: role.name == 'patient' ? 'patient' : (role.name == 'doctor' ? 'doctor' : 'hospital_admin'),
+            status: 'active',
+            createdAt: DateTime.now(),
+          );
+
+          await _firestoreService.createUser(newUser);
+
+          if (role == LoginRole.patient) {
+            PatientProfileModel profile = PatientProfileModel(
+              dob: dob ?? '',
+              gender: gender ?? '',
+              bloodGroup: bloodGroup ?? '',
+              isProfileComplete: true,
+            );
+            await _firestoreService.savePatientProfile(newUser.uid, profile);
+            Get.offAllNamed(AppRoutes.patientDashboard);
+          } else if (role == LoginRole.doctor) {
+            Get.offAllNamed(AppRoutes.doctorDashboard);
+          } else {
+            Get.offAllNamed(AppRoutes.hospitalDashboard);
+          }
+          Get.snackbar('Success', 'Account created successfully!');
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      Get.snackbar('Error', e.message ?? 'Verification failed');
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  void _navigateAfterVerification(String roleStr) {
+    if (roleStr == 'patient') Get.offAllNamed(AppRoutes.patientDashboard);
+    else if (roleStr == 'doctor') Get.offAllNamed(AppRoutes.doctorDashboard);
+    else if (roleStr == 'hospital_admin') Get.offAllNamed(AppRoutes.hospitalDashboard);
+    else Get.offAllNamed(AppRoutes.roleSelection);
+  }
+
+  Future<void> resendOtp() async {
+    if (!canResend.value) return;
+    isLoading.value = true;
+    update();
+    try {
+      await _authRepository.verifyPhoneNumber(
+        mobileNumber,
+        verificationCompleted: (PhoneAuthCredential credential) {},
+        verificationFailed: (FirebaseAuthException e) => Get.snackbar('Error', e.message ?? 'Failed'),
+        codeSent: (String vId, int? resendToken) {
+          verificationId = vId;
+          _startTimer();
+          Get.snackbar('OTP Sent', 'New code sent to +91 $mobileNumber');
+        },
+        codeAutoRetrievalTimeout: (String vId) {},
+      );
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  void goBack() => Get.back();
+
+  @override
+  void onClose() {
+    for (var c in otpControllers) c.dispose();
+    for (var f in focusNodes) f.dispose();
+    _timer?.cancel();
+    super.onClose();
+  }
+}
