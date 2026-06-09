@@ -9,6 +9,7 @@ class DoctorProfileController extends GetxController {
   late DoctorModel doctor;
   final isLoading = false.obs;
   final hospitalName = ''.obs;
+  final isAdminView = false.obs;
 
   @override
   void onInit() {
@@ -16,6 +17,7 @@ class DoctorProfileController extends GetxController {
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null && args['doctor'] != null) {
       doctor = args['doctor'];
+      isAdminView.value = args['isAdmin'] ?? false;
       _loadHospitalDetails();
     } else {
       Get.back();
@@ -35,5 +37,13 @@ class DoctorProfileController extends GetxController {
 
   void onBookAppointment() {
     Get.toNamed(AppRoutes.slotSelection, arguments: {'doctor': doctor});
+  }
+
+  void onViewSchedule() {
+    // Navigate to a read-only schedule view for admin
+    Get.toNamed(AppRoutes.doctorSchedule, arguments: {
+      'doctorId': doctor.doctorId,
+      'isReadOnly': true
+    });
   }
 }

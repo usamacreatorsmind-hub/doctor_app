@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
 import 'doctor_profile_controller.dart';
 
 class DoctorProfileScreen extends GetView<DoctorProfileController> {
@@ -35,12 +34,36 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
-                    children: [
-                      _chip(controller.doctor.specialization),
-                      ...controller.doctor.diseasesCovered.map((d) => _chip(d)),
-                    ],
+                    children: controller.doctor.specialization.map((s) => _chip(s)).toList(),
                   ),
-                  const SizedBox(height: 100), // Space for bottom button
+                  if (controller.doctor.languagesKnown.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Languages Known'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: controller.doctor.languagesKnown.map((l) => _chip(l)).toList(),
+                    ),
+                  ],
+                  if (controller.doctor.diseasesCovered.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Diseases Treated'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: controller.doctor.diseasesCovered.map((d) => _chip(d)).toList(),
+                    ),
+                  ],
+                  if (controller.doctor.symptomsCovered.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Symptoms Treated'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: controller.doctor.symptomsCovered.map((s) => _chip(s)).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -56,7 +79,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
       expandedHeight: 300,
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
-        background: controller.doctor.photoUrl != null
+        background: (controller.doctor.photoUrl != null && controller.doctor.photoUrl!.isNotEmpty)
             ? Image.network(controller.doctor.photoUrl!, fit: BoxFit.cover)
             : Container(
                 color: AppColors.primarySurface,
@@ -79,7 +102,8 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                 children: [
                   Text(controller.doctor.doctorName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 4),
-                  Text('${controller.doctor.qualification} - ${controller.doctor.specialization}', style: const TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w500)),
+                  Text('${controller.doctor.qualification} - ${controller.doctor.specialization.join(", ")}', 
+                    style: const TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -117,7 +141,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
     return Container(
       width: Get.width * 0.28,
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.primaryBorder.withValues(alpha: 0.5))),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5))),
       child: Column(
         children: [
           Icon(icon, color: color, size: 24),
@@ -135,7 +159,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
 
   Widget _chip(String label) {
     return Chip(
-      label: Text(label, style: const TextStyle(fontSize: 12)),
+      label: Text(label, style: const TextStyle(fontSize: 11)),
       backgroundColor: Colors.white,
       side: const BorderSide(color: AppColors.primaryBorder),
     );
@@ -146,7 +170,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
       ),
       child: Row(
         children: [
@@ -160,16 +184,21 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
           ),
           const SizedBox(width: 24),
           Expanded(
-            child: ElevatedButton(
-              onPressed: controller.onBookAppointment,
+            child: Obx(() => ElevatedButton(
+              onPressed: controller.isAdminView.value 
+                ? controller.onViewSchedule 
+                : controller.onBookAppointment,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Book Appointment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
+              child: Text(
+                controller.isAdminView.value ? 'View Schedule' : 'Book Appointment', 
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+              ),
+            )),
           ),
         ],
       ),

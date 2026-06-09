@@ -14,7 +14,15 @@ class AuthRepository {
     return await _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
-  // Register with Email/Password and Save to Firestore
+  // Create Auth account only (used when custom profile creation is needed)
+  Future<UserCredential?> signUpAuth(String email, String password) async {
+    return await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  // Register with Email/Password and Save to Firestore (General)
   Future<UserCredential?> signUp(UserModel user, String password) async {
     UserCredential credential = await _auth.createUserWithEmailAndPassword(
       email: user.email,
@@ -23,15 +31,7 @@ class AuthRepository {
     
     if (credential.user != null) {
       // User create hone ke baad Firestore mein save karein
-      UserModel newUser = UserModel(
-        uid: credential.user!.uid,
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile,
-        role: user.role,
-        status: 'active',
-        createdAt: DateTime.now(),
-      );
+      UserModel newUser = user.copyWith(uid: credential.user!.uid);
       await _firestoreService.createUser(newUser);
     }
     return credential;

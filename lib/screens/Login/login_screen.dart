@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/app_routes.dart';
 import 'login_controller.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -44,9 +45,8 @@ class LoginScreen extends StatelessWidget {
                         _buildToggleModeButton(controller),
                         const SizedBox(height: 10),
 
-                        // Register link (only for patient)
-                        if (controller.selectedRole.value == LoginRole.patient)
-                          _buildRegisterLink(controller),
+                        // Register links based on role
+                        _buildRegisterSection(controller),
                       ],
                     ),
                   ),
@@ -259,22 +259,31 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  // ── Register Link ──
-  Widget _buildRegisterLink(LoginController controller) {
+  // ── Register Section ──
+  Widget _buildRegisterSection(LoginController controller) {
+    if (controller.selectedRole.value == LoginRole.patient) {
+      return _buildRegisterLink('New patient? ', 'Create Account', controller.goToRegister);
+    } else if (controller.selectedRole.value == LoginRole.doctor) {
+      return _buildRegisterLink('Are you a doctor? ', 'Register Now', () => Get.toNamed(AppRoutes.doctorRegister));
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildRegisterLink(String text, String actionText, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'New patient? ',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          Text(
+            text,
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           GestureDetector(
-            onTap: controller.goToRegister,
-            child: const Text(
-              'Create Account',
-              style: TextStyle(
+            onTap: onTap,
+            child: Text(
+              actionText,
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,

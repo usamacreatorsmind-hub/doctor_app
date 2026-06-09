@@ -6,6 +6,7 @@ class AppRoutes {
   static const String login            = '/login';
   static const String otpVerification  = '/otp-verification';
   static const String register         = '/register';
+  static const String doctorRegister   = '/doctor-register';
   static const String forgotPassword   = '/forgot-password';
   static const String resetPassword    = '/reset-password';
 
@@ -30,6 +31,7 @@ class AppRoutes {
   static const String doctorSchedule  = '/doctor-schedule';
   static const String addPrescription = '/add-prescription';
   static const String doctorReports    = '/doctor-reports';
+  static const String doctorSelfProfile = '/doctor-self-profile';
 
   // Hospital Admin
   static const String hospitalDashboard = '/hospital-dashboard';
@@ -37,4 +39,5 @@ class AppRoutes {
   static const String hospitalAppointments = '/hospital-appointments';
   static const String hospitalProfile      = '/hospital-profile';
   static const String hospitalReports      = '/hospital-reports';
+  static const String hospitalJoinRequests = '/hospital-join-requests';
 }

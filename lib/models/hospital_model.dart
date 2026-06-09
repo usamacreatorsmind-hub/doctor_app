@@ -1,11 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// ─────────────────────────────────────────
-// Firestore Path: hospitals/{hospitalId}
-// ─────────────────────────────────────────
 class HospitalModel {
   final String hospitalId;
-  final String adminUid;       // linked user uid
+  final String adminUserId;
   final String hospitalName;
   final String registrationNo;
   final String address;
@@ -15,18 +12,18 @@ class HospitalModel {
   final String contactNumber;
   final String email;
   final String? website;
-  final String? logoUrl;
+  final String? logo;
   final List<String> departments;
-  final String workingHoursStart; // e.g. "09:00"
-  final String workingHoursEnd;   // e.g. "21:00"
+  final Map<String, String> workingHours; // { "open": "09:00 AM", "close": "08:00 PM" }
   final bool emergencyAvailable;
-  final String status;            // active | inactive
+  final String status;
+  final String? createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
   const HospitalModel({
     required this.hospitalId,
-    required this.adminUid,
+    required this.adminUserId,
     required this.hospitalName,
     required this.registrationNo,
     required this.address,
@@ -36,34 +33,20 @@ class HospitalModel {
     required this.contactNumber,
     required this.email,
     this.website,
-    this.logoUrl,
+    this.logo,
     required this.departments,
-    required this.workingHoursStart,
-    required this.workingHoursEnd,
+    required this.workingHours,
     required this.emergencyAvailable,
     required this.status,
+    this.createdBy,
     required this.createdAt,
     this.updatedAt,
   });
 
-  static DateTime _parseDateTime(dynamic value) {
-    if (value == null) return DateTime.now();
-    if (value is Timestamp) return value.toDate();
-    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
-    return DateTime.now();
-  }
-
-  static DateTime? _parseDateTimeNullable(dynamic value) {
-    if (value == null) return null;
-    if (value is Timestamp) return value.toDate();
-    if (value is String) return DateTime.tryParse(value);
-    return null;
-  }
-
   factory HospitalModel.fromMap(Map<String, dynamic> map, String id) {
     return HospitalModel(
       hospitalId: id,
-      adminUid: map['adminUid'] ?? '',
+      adminUserId: map['adminUserId'] ?? map['adminUid'] ?? '',
       hospitalName: map['hospitalName'] ?? '',
       registrationNo: map['registrationNo'] ?? '',
       address: map['address'] ?? '',
@@ -73,20 +56,22 @@ class HospitalModel {
       contactNumber: map['contactNumber'] ?? '',
       email: map['email'] ?? '',
       website: map['website'],
-      logoUrl: map['logoUrl'],
+      logo: map['logo'] ?? map['logoUrl'],
       departments: List<String>.from(map['departments'] ?? []),
-      workingHoursStart: map['workingHoursStart'] ?? '09:00',
-      workingHoursEnd: map['workingHoursEnd'] ?? '21:00',
+      workingHours: Map<String, String>.from(map['workingHours'] ?? {'open': '09:00 AM', 'close': '08:00 PM'}),
       emergencyAvailable: map['emergencyAvailable'] ?? false,
       status: map['status'] ?? 'active',
-      createdAt: _parseDateTime(map['createdAt']),
-      updatedAt: _parseDateTimeNullable(map['updatedAt']),
+      createdBy: map['createdBy'],
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'adminUid': adminUid,
+      'hospitalId': hospitalId,
+      'adminUserId': adminUserId,
+      'adminUid': adminUserId,
       'hospitalName': hospitalName,
       'registrationNo': registrationNo,
       'address': address,
@@ -96,12 +81,12 @@ class HospitalModel {
       'contactNumber': contactNumber,
       'email': email,
       'website': website,
-      'logoUrl': logoUrl,
+      'logo': logo,
       'departments': departments,
-      'workingHoursStart': workingHoursStart,
-      'workingHoursEnd': workingHoursEnd,
+      'workingHours': workingHours,
       'emergencyAvailable': emergencyAvailable,
       'status': status,
+      'createdBy': createdBy,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -117,16 +102,15 @@ class HospitalModel {
     String? contactNumber,
     String? email,
     String? website,
-    String? logoUrl,
+    String? logo,
     List<String>? departments,
-    String? workingHoursStart,
-    String? workingHoursEnd,
+    Map<String, String>? workingHours,
     bool? emergencyAvailable,
     String? status,
   }) {
     return HospitalModel(
       hospitalId: hospitalId,
-      adminUid: adminUid,
+      adminUserId: adminUserId,
       hospitalName: hospitalName ?? this.hospitalName,
       registrationNo: registrationNo ?? this.registrationNo,
       address: address ?? this.address,
@@ -136,12 +120,12 @@ class HospitalModel {
       contactNumber: contactNumber ?? this.contactNumber,
       email: email ?? this.email,
       website: website ?? this.website,
-      logoUrl: logoUrl ?? this.logoUrl,
+      logo: logo ?? this.logo,
       departments: departments ?? this.departments,
-      workingHoursStart: workingHoursStart ?? this.workingHoursStart,
-      workingHoursEnd: workingHoursEnd ?? this.workingHoursEnd,
+      workingHours: workingHours ?? this.workingHours,
       emergencyAvailable: emergencyAvailable ?? this.emergencyAvailable,
       status: status ?? this.status,
+      createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

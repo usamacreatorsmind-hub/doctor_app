@@ -24,6 +24,8 @@ class HospitalDashboardScreen extends GetView<HospitalDashboardController> {
                         delegate: SliverChildListDelegate([
                           _buildStatCards(),
                           const SizedBox(height: 24),
+                          _buildJoinRequestsSection(),
+                          const SizedBox(height: 24),
                           _buildSectionHeader(
                             'Our Doctors',
                             controller.goToAddDoctor,
@@ -32,7 +34,6 @@ class HospitalDashboardScreen extends GetView<HospitalDashboardController> {
                           const SizedBox(height: 12),
                           _buildDoctorsList(),
                           const SizedBox(height: 24),
-                          // ✅ Fixed: Linked to All Appointments
                           _buildSectionHeader(
                             'Today\'s Appointments', 
                             controller.goToAllAppointments,
@@ -49,8 +50,8 @@ class HospitalDashboardScreen extends GetView<HospitalDashboardController> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: controller.goToAddDoctor,
-        label: const Text('Add Doctor'),
-        icon: const Icon(Icons.add),
+        label: const Text('Add Doctor',style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add,color: Colors.white),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -141,6 +142,56 @@ class HospitalDashboardScreen extends GetView<HospitalDashboardController> {
     );
   }
 
+  Widget _buildJoinRequestsSection() {
+    return Obx(() {
+      if (controller.pendingRequestsCount.value == 0) return const SizedBox.shrink();
+      
+      return GestureDetector(
+        onTap: controller.goToJoinRequests,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.notification_important_rounded, color: Colors.white, size: 28),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${controller.pendingRequestsCount.value} New Join Requests',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const Text(
+                      'Doctors want to join your hospital',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
   Widget _buildSectionHeader(String title, VoidCallback onAction, {String actionLabel = 'See All'}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -161,25 +212,29 @@ class HospitalDashboardScreen extends GetView<HospitalDashboardController> {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final doc = controller.doctors[index];
-          return Container(
-            width: 200,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                CircleAvatar(backgroundColor: AppColors.primarySurface, child: const Icon(Icons.person, color: AppColors.primary)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(doc.doctorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis),
-                      Text(doc.specialization, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                    ],
+          return GestureDetector(
+            onTap: () => controller.onDoctorTapped(doc),
+            child: Container(
+              width: 200,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  CircleAvatar(backgroundColor: AppColors.primarySurface, child: const Icon(Icons.person, color: AppColors.primary)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(doc.doctorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis),
+                        Text(doc.specialization.join(', '), style: const
+                        TextStyle(color: AppColors.textSecondary, fontSize: 11), overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -211,8 +266,8 @@ class HospitalDashboardScreen extends GetView<HospitalDashboardController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Patient ID: ${appt.patientId}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Dr. ${appt.doctorId}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(appt.patientName ?? 'Patient ID: ${appt.patientId}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Dr. ${appt.doctorName ?? appt.doctorId}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),

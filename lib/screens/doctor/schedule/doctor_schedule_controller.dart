@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../Repository/FirestoreService.dart';
@@ -10,6 +9,9 @@ class DoctorScheduleController extends GetxController {
 
   final isLoading = false.obs;
   final schedules = <DoctorScheduleModel>[].obs;
+  final isReadOnly = false.obs;
+  String? targetDoctorId;
+  String? targetHospitalId;
   
   final List<String> weekDays = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
@@ -18,21 +20,33 @@ class DoctorScheduleController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      targetDoctorId = args['doctorId'];
+      isReadOnly.value = args['isReadOnly'] ?? false;
+    }
     loadSchedules();
   }
 
   Future<void> loadSchedules() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
     isLoading.value = true;
     update();
 
     try {
-      final myDoctor = await _firestoreService.getDoctorByUid(user.uid);
+      String? doctorId = targetDoctorId;
       
-      if (myDoctor != null) {
-        final results = await _firestoreService.getDoctorSchedules(myDoctor.doctorId);
+      // If no targetDoctorId, assume it's the logged-in doctor viewing their own schedule
+      if (doctorId == null) {
+        final user = _auth.currentUser;
+        if (user != null) {
+          final myDoctor = await _firestoreService.getDoctorByUid(user.uid);
+          doctorId = myDoctor?.doctorId;
+          targetHospitalId = myDoctor?.hospitalId;
+        }
+      }
+
+      if (doctorId != null) {
+        final results = await _firestoreService.getDoctorSchedules(doctorId);
         schedules.value = results;
       }
     } catch (e) {
@@ -44,6 +58,8 @@ class DoctorScheduleController extends GetxController {
   }
 
   Future<void> updateSchedule(String day, String startTime, String endTime, int duration) async {
+    if (isReadOnly.value) return;
+    
     final user = _auth.currentUser;
     if (user == null) return;
 
@@ -57,7 +73,7 @@ class DoctorScheduleController extends GetxController {
         await _firestoreService.updateSchedule(existing.scheduleId, {
           'startTime': startTime,
           'endTime': endTime,
-          'slotDuration': duration, // This maps to slotDurationMins in model fromMap
+          'slotDuration': duration,
         });
       } else {
         final newSchedule = DoctorScheduleModel(

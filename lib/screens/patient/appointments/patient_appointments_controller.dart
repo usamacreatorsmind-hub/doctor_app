@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/appointment_model.dart';
 
@@ -8,7 +9,9 @@ class PatientAppointmentsController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final isLoading = false.obs;
-  final appointments = <AppointmentModel>[].obs;
+  
+  final upcomingAppointments = <AppointmentModel>[].obs;
+  final pastAppointments = <AppointmentModel>[].obs;
 
   @override
   void onInit() {
@@ -25,20 +28,40 @@ class PatientAppointmentsController extends GetxController {
 
     try {
       final results = await _firestoreService.getPatientAppointments(user.uid);
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       
-      List<AppointmentModel> enhancedAppts = [];
-      for (var appt in results) {
+      // Fetch details for all appointments in parallel for better performance
+      final enhancedAppts = await Future.wait(results.map((appt) async {
         final doctor = await _firestoreService.getDoctor(appt.doctorId);
         final hospital = await _firestoreService.getHospital(appt.hospitalId);
         
-        enhancedAppts.add(appt.copyWith(
+        return appt.copyWith(
           doctorName: doctor?.doctorName ?? 'Doctor',
-          specialization: doctor?.specialization ?? 'Specialist',
+          specialization: doctor?.specialization.join(', ') ?? 'Specialist',
           hospitalName: hospital?.hospitalName ?? 'Hospital',
-        ));
+        );
+      }));
+
+      List<AppointmentModel> upcoming = [];
+      List<AppointmentModel> past = [];
+
+      for (var appt in enhancedAppts) {
+        bool isDateFutureOrToday = appt.appointmentDate.compareTo(todayStr) >= 0;
+        bool isActiveStatus = appt.status == 'Pending' || appt.status == 'Confirmed';
+
+        if (isDateFutureOrToday && isActiveStatus) {
+          upcoming.add(appt);
+        } else {
+          past.add(appt);
+        }
       }
+
+      // Sort lists
+      upcoming.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+      past.sort((a, b) => b.appointmentDate.compareTo(a.appointmentDate));
       
-      appointments.value = enhancedAppts;
+      upcomingAppointments.assignAll(upcoming);
+      pastAppointments.assignAll(past);
     } catch (e) {
       Get.snackbar('Error', 'Failed to load appointments: $e');
     } finally {
@@ -57,7 +80,5 @@ class PatientAppointmentsController extends GetxController {
     }
   }
 
-  Future<void> onRefresh() async {
-    await loadAppointments();
-  }
+  Future<void> onRefresh() async => await loadAppointments();
 }

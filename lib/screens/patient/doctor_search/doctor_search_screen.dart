@@ -12,37 +12,42 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        title: const Text('Find Doctors', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        title: const Text(
+          'Find Doctors',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
       ),
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          _buildSpecializationFilters(),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (controller.searchResults.isEmpty) {
-                return _buildEmptyState();
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.searchResults.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return _DoctorResultCard(
-                    doctor: controller.searchResults[index],
-                    onTap: () => controller.goToDoctorProfile(controller.searchResults[index]),
-                  );
-                },
-              );
-            }),
-          ),
-        ],
+      body: Obx(
+        () => Column(
+          children: [
+            _buildSearchBar(),
+            _buildSpecializationFilters(),
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (controller.searchResults.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.searchResults.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return _DoctorResultCard(
+                      doctor: controller.searchResults[index],
+                      onTap: () => controller.goToDoctorProfile(controller.searchResults[index]),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -64,7 +69,10 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
           ),
           filled: true,
           fillColor: AppColors.bgPage,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
           contentPadding: const EdgeInsets.symmetric(vertical: 0),
         ),
       ),
@@ -96,7 +104,10 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? AppColors.primary : AppColors.primaryBorder)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
+              ),
             );
           });
         },
@@ -111,7 +122,14 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
         children: [
           Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          const Text('No doctors found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+          const Text(
+            'No doctors found',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -132,41 +150,82 @@ class _DoctorResultCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 color: AppColors.primarySurface,
                 borderRadius: BorderRadius.circular(12),
-                image: doctor.photoUrl != null ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
+                image: doctor.photoUrl != null
+                    ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover)
+                    : null,
               ),
-              child: doctor.photoUrl == null ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 40) : null,
+              child: doctor.photoUrl == null
+                  ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 40)
+                  : null,
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(doctor.doctorName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                  Text(doctor.specialization, style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500)),
+                  Text(
+                    doctor.doctorName,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    doctor.specialization.join(', '),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       const Icon(Icons.star_rounded, size: 16, color: Colors.orange),
                       const SizedBox(width: 4),
-                      Text(doctor.rating.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                      Text(' (${doctor.totalReviews})', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      Text(
+                        doctor.rating.toString(),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        ' (${doctor.totalReviews})',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('${doctor.experience} yrs exp', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                      Text('₹${doctor.consultationFee.toInt()}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      Text(
+                        '${doctor.experience} yrs exp',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        '₹${doctor.consultationFee.toInt()}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ],
                   ),
                 ],

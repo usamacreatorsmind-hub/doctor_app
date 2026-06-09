@@ -46,9 +46,9 @@ class LoginController extends GetxController {
 
   @override
   void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    mobileController.dispose();
+    // Note: Removed explicit dispose() calls for TextEditingControllers 
+    // to prevent "used after disposed" errors during route transitions 
+    // like Get.offAllNamed(). GetX will handle controller lifecycle.
     super.onClose();
   }
 

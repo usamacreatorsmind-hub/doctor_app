@@ -14,6 +14,7 @@ class HospitalDashboardController extends GetxController {
   final hospital = Rxn<HospitalModel>();
   final doctors = <DoctorModel>[].obs;
   final todayAppointments = <AppointmentModel>[].obs;
+  final pendingRequestsCount = 0.obs;
 
   @override
   void onInit() {
@@ -22,47 +23,70 @@ class HospitalDashboardController extends GetxController {
   }
 
   Future<void> loadDashboardData() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return;
 
     isLoading.value = true;
     update();
 
     try {
-      final managedHospital = await _firestoreService.getHospitalByAdminUid(user.uid);
+      final userModel = await _firestoreService.getUser(firebaseUser.uid);
+      HospitalModel? managedHospital;
+      
+      if (userModel?.hospitalId != null && userModel!.hospitalId!.isNotEmpty) {
+        managedHospital = await _firestoreService.getHospital(userModel.hospitalId!);
+      }
+      
+      managedHospital ??= await _firestoreService.getHospitalByAdminUid(firebaseUser.uid);
       
       if (managedHospital != null) {
         hospital.value = managedHospital;
         
-        // Fetch Doctors
         final hospitalDoctors = await _firestoreService.getDoctorsByHospital(managedHospital.hospitalId);
-        doctors.value = hospitalDoctors;
+        doctors.assignAll(hospitalDoctors);
 
-        // Fetch Today's Appointments
+        final requests = await _firestoreService.getHospitalJoinRequests(managedHospital.hospitalId);
+        pendingRequestsCount.value = requests.length;
+
         final today = DateTime.now().toIso8601String().split('T')[0];
-        
-        // ✅ Fixed: Added 'date:' named parameter
         final appts = await _firestoreService.getHospitalAppointments(managedHospital.hospitalId, date: today);
         
-        // Fetch Patient Names for display
         List<AppointmentModel> enhancedAppts = [];
         for (var appt in appts) {
           final patientData = await _firestoreService.getUser(appt.patientId);
-          enhancedAppts.add(appt.copyWith(patientName: patientData?.name ?? 'Patient'));
+          final doctor = hospitalDoctors.firstWhereOrNull((d) => d.doctorId == appt.doctorId);
+          
+          enhancedAppts.add(appt.copyWith(
+            patientName: patientData?.name ?? 'Patient',
+            doctorName: doctor?.doctorName ?? 'Doctor',
+          ));
         }
-        todayAppointments.value = enhancedAppts;
+        todayAppointments.assignAll(enhancedAppts);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load dashboard data');
+      print("Error loading dashboard data: $e");
     } finally {
       isLoading.value = false;
       update();
     }
   }
 
+  void onDoctorTapped(DoctorModel doctor) {
+    Get.toNamed(AppRoutes.doctorProfile, arguments: {
+      'doctor': doctor,
+      'isAdmin': true
+    });
+  }
+
   void goToAddDoctor() {
     if (hospital.value != null) {
       Get.toNamed(AppRoutes.addDoctor, arguments: {'hospitalId': hospital.value!.hospitalId});
+    }
+  }
+
+  void goToJoinRequests() {
+    if (hospital.value != null) {
+      Get.toNamed(AppRoutes.hospitalJoinRequests, arguments: {'hospitalId': hospital.value!.hospitalId});
     }
   }
 

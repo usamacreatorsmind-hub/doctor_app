@@ -3,10 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class DoctorModel {
   final String doctorId;
   final String uid;
-  final String hospitalId;
+  final String hospitalId; // Primary hospital ID
+  final List<String> hospitalIds; // All hospitals the doctor is associated with
   final String doctorName;
   final String qualification;
-  final String specialization;
+  final List<String> specialization; // Updated to List<String>
   final int experience;
   final double consultationFee;
   final String mobileNumber;
@@ -28,6 +29,7 @@ class DoctorModel {
     required this.doctorId,
     required this.uid,
     required this.hospitalId,
+    required this.hospitalIds,
     required this.doctorName,
     required this.qualification,
     required this.specialization,
@@ -64,13 +66,33 @@ class DoctorModel {
   }
 
   factory DoctorModel.fromMap(Map<String, dynamic> map, String id) {
+    // Handle specialization as List
+    List<String> specs = [];
+    if (map['specialization'] is List) {
+      specs = List<String>.from(map['specialization']);
+    } else if (map['specialization'] != null) {
+      specs = [map['specialization'].toString()];
+    }
+
+    // Handle hospitalIds list
+    List<String> hIds = [];
+    if (map['hospitalIds'] is List) {
+      hIds = List<String>.from(map['hospitalIds']);
+    } else if (map['hospitalId'] != null) {
+      hIds = [map['hospitalId'].toString()];
+    }
+
+    // Handle primary hospitalId
+    String primaryHId = map['hospitalId'] ?? (hIds.isNotEmpty ? hIds.first : '');
+
     return DoctorModel(
       doctorId: id,
-      uid: map['uid'] ?? '',
-      hospitalId: map['hospitalId'] ?? '',
+      uid: map['uid'] ?? map['userId'] ?? '',
+      hospitalId: primaryHId,
+      hospitalIds: hIds,
       doctorName: map['doctorName'] ?? '',
       qualification: map['qualification'] ?? '',
-      specialization: map['specialization'] ?? '',
+      specialization: specs,
       experience: int.tryParse(map['experience']?.toString() ?? '0') ?? 0,
       consultationFee: double.tryParse(map['consultationFee']?.toString() ?? '0.0') ?? 0.0,
       mobileNumber: map['mobileNumber'] ?? '',
@@ -78,7 +100,7 @@ class DoctorModel {
       gender: map['gender'] ?? '',
       languagesKnown: List<String>.from(map['languagesKnown'] ?? []),
       biography: map['biography'],
-      photoUrl: map['photoUrl'],
+      photoUrl: map['photoUrl'] ?? map['photo'],
       symptomsCovered: List<String>.from(map['symptomsCovered'] ?? []),
       diseasesCovered: List<String>.from(map['diseasesCovered'] ?? []),
       consultationMode: map['consultationMode'] ?? 'Both',
@@ -93,7 +115,9 @@ class DoctorModel {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
+      'userId': uid,
       'hospitalId': hospitalId,
+      'hospitalIds': hospitalIds,
       'doctorName': doctorName,
       'qualification': qualification,
       'specialization': specialization,
@@ -105,6 +129,7 @@ class DoctorModel {
       'languagesKnown': languagesKnown,
       'biography': biography,
       'photoUrl': photoUrl,
+      'photo': photoUrl,
       'symptomsCovered': symptomsCovered,
       'diseasesCovered': diseasesCovered,
       'consultationMode': consultationMode,

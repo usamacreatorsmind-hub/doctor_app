@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/patient_profile_model.dart';
+import '../../../models/user_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../../Repository/FirestoreService.dart';
 
@@ -19,6 +20,8 @@ class ProfileSetupController extends GetxController {
   final step3FormKey = GlobalKey<FormState>();
 
   // Step 1 Controllers
+  final nameController      = TextEditingController();
+  final mobileController    = TextEditingController();
   final dobController       = TextEditingController();
   final addressController   = TextEditingController();
   final cityController      = TextEditingController();
@@ -60,7 +63,15 @@ class ProfileSetupController extends GetxController {
   ];
 
   @override
+  void onInit() {
+    super.onInit();
+    _loadExistingProfile();
+  }
+
+  @override
   void onClose() {
+    nameController.dispose();
+    mobileController.dispose();
     dobController.dispose();
     addressController.dispose();
     cityController.dispose();
@@ -74,6 +85,81 @@ class ProfileSetupController extends GetxController {
     insuranceProviderController.dispose();
     insurancePolicyController.dispose();
     super.onClose();
+  }
+
+  Future<void> _loadExistingProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    isLoading.value = true;
+    update();
+
+    try {
+      // 1. Load basic user data (Name and Mobile)
+      UserModel? userData = await _firestoreService.getUser(user.uid);
+      if (userData != null) {
+        nameController.text = userData.name;
+        mobileController.text = userData.mobile;
+      }
+
+      // 2. Load detailed profile
+      final profile = await _firestoreService.getPatientProfile(user.uid);
+      if (profile != null) {
+        // Step 1: Text Fields
+        dobController.text = profile.dob ?? '';
+        addressController.text = profile.address ?? '';
+        cityController.text = profile.city ?? '';
+        stateController.text = profile.state ?? '';
+        pincodeController.text = profile.pincode ?? '';
+        
+        // Gender Auto-fill with Casing Logic
+        if (profile.gender != null && profile.gender!.isNotEmpty) {
+          String g = profile.gender!.trim().toLowerCase();
+          if (g == 'male') {
+            selectedGender.value = 'Male';
+          } else if (g == 'female') {
+            selectedGender.value = 'Female';
+          } else if (g == 'other') {
+            selectedGender.value = 'Other';
+          } else {
+            for (var opt in genders) {
+              if (opt.toLowerCase() == g) {
+                selectedGender.value = opt;
+                break;
+              }
+            }
+          }
+        }
+
+        // Blood Group Auto-fill
+        if (profile.bloodGroup != null && profile.bloodGroup!.isNotEmpty) {
+          String bg = profile.bloodGroup!.trim().toUpperCase();
+          if (bg.contains('POSITIVE')) bg = bg.replaceAll('POSITIVE', '+').replaceAll(' ', '');
+          if (bg.contains('NEGATIVE')) bg = bg.replaceAll('NEGATIVE', '-').replaceAll(' ', '');
+          
+          if (bloodGroups.contains(bg)) {
+            selectedBloodGroup.value = bg;
+          }
+        }
+
+        // Step 2: Lists
+        medicalHistoryList.assignAll(profile.medicalHistory);
+        currentMedications.assignAll(profile.currentMedications);
+        allergiesList.assignAll(profile.allergies);
+
+        // Step 3: Emergency Info
+        emergencyNameController.text = profile.emergencyContactName ?? '';
+        emergencyNumberController.text = profile.emergencyContactNumber ?? '';
+        selectedRelation.value = profile.emergencyContactRelation ?? '';
+        insuranceProviderController.text = profile.insuranceProvider ?? '';
+        insurancePolicyController.text = profile.insurancePolicyNumber ?? '';
+      }
+    } catch (e) {
+      print("Error loading profile: $e");
+    } finally {
+      isLoading.value = false;
+      update();
+    }
   }
 
   void selectGender(String gender) { selectedGender.value = gender; update(); }
@@ -191,7 +277,8 @@ class ProfileSetupController extends GetxController {
   void onSkip() => Get.offAllNamed(AppRoutes.patientDashboard);
 
   Future<void> _saveProfile() async {
-    if (_auth.currentUser == null) {
+    final user = _auth.currentUser;
+    if (user == null) {
       Get.snackbar('Error', 'User not logged in');
       return;
     }
@@ -199,6 +286,13 @@ class ProfileSetupController extends GetxController {
     isSaving.value = true;
     update();
     try {
+      // 1. Update basic user info in users collection
+      await _firestoreService.updateUser(user.uid, {
+        'name': nameController.text.trim(),
+        'mobile': mobileController.text.trim(),
+      });
+
+      // 2. Save profile in profile collection
       final profile = PatientProfileModel(
         dob: dobController.text,
         gender: selectedGender.value,
@@ -218,7 +312,7 @@ class ProfileSetupController extends GetxController {
         isProfileComplete: true,
       );
       
-      await _firestoreService.savePatientProfile(_auth.currentUser!.uid, profile);
+      await _firestoreService.savePatientProfile(user.uid, profile);
 
       Get.snackbar('Success', 'Profile updated successfully', backgroundColor: Colors.green, colorText: Colors.white);
       Get.offAllNamed(AppRoutes.patientDashboard);

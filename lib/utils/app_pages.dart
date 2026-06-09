@@ -12,6 +12,8 @@ import '../screens/otp/otp_binding.dart';
 import '../screens/otp/otp_screen.dart';
 import '../screens/register/register_binding.dart';
 import '../screens/register/register_screen.dart';
+import '../screens/doctor/register/doctor_register_binding.dart';
+import '../screens/doctor/register/doctor_register_screen.dart';
 import '../screens/forgot_password/forgot_password_binding.dart';
 import '../screens/forgot_password/forgot_password_screen.dart';
 import '../screens/patient/profile_setup/profile_setup_binding.dart';
@@ -44,6 +46,8 @@ import '../screens/doctor/add_prescription/add_prescription_binding.dart';
 import '../screens/doctor/add_prescription/add_prescription_screen.dart';
 import '../screens/doctor/reports/doctor_reports_binding.dart';
 import '../screens/doctor/reports/doctor_reports_screen.dart';
+import '../screens/doctor/profile/doctor_self_profile_binding.dart';
+import '../screens/doctor/profile/doctor_self_profile_screen.dart';
 import '../screens/hospital/dashboard/hospital_dashboard_binding.dart';
 import '../screens/hospital/dashboard/hospital_dashboard_screen.dart';
 import '../screens/hospital/add_doctor/add_doctor_binding.dart';
@@ -54,6 +58,8 @@ import '../screens/hospital/appointments/hospital_appointments_binding.dart';
 import '../screens/hospital/appointments/hospital_appointments_screen.dart';
 import '../screens/hospital/reports/hospital_reports_binding.dart';
 import '../screens/hospital/reports/hospital_reports_screen.dart';
+import '../screens/hospital/join_requests/join_requests_binding.dart';
+import '../screens/hospital/join_requests/join_requests_screen.dart';
 import '../screens/notifications/notifications_binding.dart';
 import '../screens/notifications/notifications_screen.dart';
 import 'app_routes.dart';
@@ -89,6 +95,11 @@ class AppPages {
       name: AppRoutes.register,
       page: () => const RegisterScreen(),
       binding: RegisterBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.doctorRegister,
+      page: () => const DoctorRegisterScreen(),
+      binding: DoctorRegisterBinding(),
     ),
     GetPage(
       name: AppRoutes.forgotPassword,
@@ -171,15 +182,20 @@ class AppPages {
       binding: DoctorReportsBinding(),
     ),
     GetPage(
+      name: AppRoutes.doctorSelfProfile,
+      page: () => const DoctorSelfProfileScreen(),
+      binding: DoctorSelfProfileBinding(),
+    ),
+    GetPage(
       name: AppRoutes.hospitalDashboard,
       page: () => const HospitalDashboardScreen(),
       binding: HospitalDashboardBinding(),
     ),
-    GetPage(
-      name: AppRoutes.addDoctor,
-      page: () => const AddDoctorScreen(),
-      binding: AddDoctorBinding(),
-    ),
+    // GetPage(
+    //   name: AppRoutes.addDoctor,
+    //   page: () => const AddDoctorScreen(),
+    //   binding: AddDoctorBinding(),
+    // ),
     GetPage(
       name: AppRoutes.hospitalProfile,
       page: () => const HospitalProfileScreen(),
@@ -194,6 +210,11 @@ class AppPages {
       name: AppRoutes.hospitalReports,
       page: () => const HospitalReportsScreen(),
       binding: HospitalReportsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.hospitalJoinRequests,
+      page: () => const JoinRequestsScreen(),
+      binding: JoinRequestsBinding(),
     ),
     GetPage(
       name: AppRoutes.notifications,

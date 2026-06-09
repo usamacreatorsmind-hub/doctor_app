@@ -1,0 +1,322 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../../utils/app_colors.dart';
+import 'doctor_self_profile_controller.dart';
+
+class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
+  const DoctorSelfProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgPage,
+      appBar: AppBar(
+        title: const Text('My Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        actions: [
+          Obx(() => IconButton(
+            icon: Icon(controller.isEditing.value ? Icons.close : Icons.edit_rounded, color: Colors.white),
+            onPressed: controller.toggleEdit,
+          )),
+        ],
+      ),
+      body: Obx(() {
+        if (controller.isLoading.value && controller.doctorProfile.value == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildProfileHeader(),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: controller.isEditing.value ? _buildEditForm() : _buildProfileDetails(),
+                  ),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+            if (controller.isEditing.value)
+              Positioned(
+                bottom: 20,
+                left: 20,
+                right: 20,
+                child: _buildSaveButton(),
+              ),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    final profile = controller.doctorProfile.value;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(bottom: 30),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Obx(() => Stack(
+            children: [
+              CircleAvatar(
+                radius: 55,
+                backgroundColor: Colors.white24,
+                backgroundImage: controller.pickedImage.value != null
+                    ? FileImage(controller.pickedImage.value!) as ImageProvider
+                    : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
+                        ? NetworkImage(profile.photoUrl!)
+                        : null,
+                child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
+                    ? const Icon(Icons.person, color: Colors.white, size: 55)
+                    : null,
+              ),
+              if (controller.isEditing.value)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: controller.pickImage,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary, size: 20),
+                    ),
+                  ),
+                ),
+            ],
+          )),
+          const SizedBox(height: 16),
+          Text(
+            profile?.doctorName ?? 'Doctor Name',
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            profile?.specialization.join(', ') ?? 'Specialization',
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileDetails() {
+    final profile = controller.doctorProfile.value;
+    if (profile == null) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _infoTile(Icons.school_outlined, 'Qualification', profile.qualification),
+        _infoTile(Icons.work_history_outlined, 'Experience', '${profile.experience} Years'),
+        _infoTile(Icons.currency_rupee_rounded, 'Consultation Fee', '₹${profile.consultationFee}'),
+        _infoTile(Icons.phone_android_rounded, 'Mobile', profile.mobileNumber),
+        _infoTile(Icons.email_outlined, 'Email', profile.email),
+
+        const SizedBox(height: 20),
+        _buildViewChips('Specializations', profile.specialization, AppColors.primary),
+        const SizedBox(height: 20),
+        _buildHospitalViewChips('Associated Hospitals', profile.hospitalIds),
+        
+        // Language section added here
+        const SizedBox(height: 20),
+        Obx(() => _buildViewChips('Languages Known', controller.selectedLanguages, Colors.teal)),
+        
+        const SizedBox(height: 20),
+        _buildViewChips('Symptoms Covered', profile.symptomsCovered, Colors.orange),
+        const SizedBox(height: 20),
+        _buildViewChips('Diseases Covered', profile.diseasesCovered, Colors.redAccent),
+
+        const SizedBox(height: 20),
+        const Text('Biography', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+          child: Text(profile.biography ?? 'No biography added', style: const TextStyle(color: AppColors.textSecondary, height: 1.5)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHospitalViewChips(String title, List<String> hIds) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: hIds.map((id) {
+            final hName = controller.hospitals.firstWhereOrNull((h) => h.hospitalId == id)?.hospitalName ?? id;
+            return Chip(
+              label: Text(hName, style: const TextStyle(fontSize: 11, color: Colors.white)),
+              backgroundColor: Colors.blueGrey,
+              side: BorderSide.none,
+              avatar: const Icon(Icons.local_hospital, color: Colors.white, size: 14),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildViewChips(String title, List<String> items, Color color) {
+    final filteredItems = items.where((i) => i.isNotEmpty).toList();
+    if (filteredItems.isEmpty) return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: filteredItems.map((i) => Chip(
+            label: Text(i, style: const TextStyle(fontSize: 11, color: Colors.white)),
+            backgroundColor: color.withOpacity(0.8),
+            side: BorderSide.none,
+          )).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditForm() {
+    final hospitalIds = controller.hospitals.map((h) => h.hospitalId).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField('Full Name', controller.nameController, Icons.person_outline),
+        _buildTextField('Qualification', controller.qualificationController, Icons.school_outlined),
+        Row(
+          children: [
+            Expanded(child: _buildTextField('Experience', controller.experienceController, Icons.work_history_outlined, keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildTextField('Fee', controller.feeController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number)),
+          ],
+        ),
+        _buildTextField('Mobile Number', controller.mobileController, Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+
+        const SizedBox(height: 12),
+        _buildChipSection('Select Hospitals', hospitalIds.obs, controller.selectedHospitalIds, Colors.blueGrey, isHospital: true),
+        const SizedBox(height: 20),
+        _buildChipSection('Specializations', controller.availableSpecializations, controller.selectedSpecializations, AppColors.primary),
+        const SizedBox(height: 20),
+        _buildChipSection('Symptoms Covered', controller.availableSymptoms, controller.selectedSymptoms, Colors.orange),
+        const SizedBox(height: 20),
+        _buildChipSection('Diseases Covered', controller.availableDiseases, controller.selectedDiseases, Colors.redAccent),
+        const SizedBox(height: 20),
+        _buildChipSection('Languages Known', controller.availableLanguages, controller.selectedLanguages, Colors.teal),
+        const SizedBox(height: 20),
+
+        _buildTextField('Biography', controller.bioController, Icons.description_outlined, maxLines: 4),
+      ],
+    );
+  }
+
+  Widget _buildChipSection(String title, RxList<String> availableList, RxList<String> selectedList, Color activeColor, {bool isHospital = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Obx(() => Wrap(
+          spacing: 8,
+          children: availableList.map((item) {
+            final isSelected = selectedList.contains(item);
+            String label = item;
+            if (isHospital) {
+              label = controller.hospitals.firstWhereOrNull((h) => h.hospitalId == item)?.hospitalName ?? item;
+            }
+            return FilterChip(
+              label: Text(label, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : Colors.black87)),
+              selected: isSelected,
+              onSelected: (_) => controller.toggleSelection(selectedList, item),
+              selectedColor: activeColor,
+              checkmarkColor: Colors.white,
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? activeColor : AppColors.primaryBorder)),
+            );
+          }).toList(),
+        )),
+      ],
+    );
+  }
+
+  Widget _infoTile(IconData icon, String label, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController ctrl, IconData icon, {TextInputType keyboardType = TextInputType.text, int maxLines = 1}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: ctrl,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          style: const TextStyle(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: label,
+            prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: controller.isLoading.value ? null : controller.updateProfile,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 4,
+        ),
+        child: controller.isLoading.value
+            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      ),
+    );
+  }
+}
