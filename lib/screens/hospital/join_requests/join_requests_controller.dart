@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../../Repository/FirestoreService.dart';
+import '../../../utils/helper.dart';
 
 class JoinRequestsController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -22,7 +23,7 @@ class JoinRequestsController extends GetxController {
     try {
       requests.assignAll(await _firestoreService.getHospitalJoinRequests(hospitalId));
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load requests: $e');
+      AppSnackBar.show('Failed to load requests: $e');
     } finally {
       isLoading.value = false;
       update();
@@ -40,11 +41,10 @@ class JoinRequestsController extends GetxController {
         hospitalId: hospitalId,
         status: status,
       );
-
-      Get.snackbar('Success', 'Request ${status == 'approved' ? 'Approved' : 'Rejected'}');
+      AppSnackBar.show('Request ${status == 'approved' ? 'Approved' : 'Rejected'}');
       loadRequests();
     } catch (e) {
-      Get.snackbar('Error', 'Action failed: $e');
+      AppSnackBar.show('Failed to respond to request: $e');
     } finally {
       isLoading.value = false;
       update();

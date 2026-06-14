@@ -1,3 +1,5 @@
+// File: lib/screens/doctor/profile/doctor_self_profile_controller.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/hospital_model.dart';
+import '../../../utils/helper.dart';
 
 class DoctorSelfProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -19,39 +22,38 @@ class DoctorSelfProfileController extends GetxController {
   final isEditing = false.obs;
   final doctorProfile = Rxn<DoctorModel>();
 
-  // Master Data Lists (Dynamic from DB)
+  // Master Data Lists
   final hospitals = <HospitalModel>[].obs;
   final availableSpecializations = <String>[].obs;
+  final availableQualifications = <String>[].obs;
   final availableSymptoms = <String>[].obs;
   final availableDiseases = <String>[].obs;
   final availableLanguages = <String>['Hindi', 'English', 'Punjabi', 'Marathi', 'Gujarati', 'Tamil', 'Bengali'].obs;
 
   // Form Controllers
   late TextEditingController nameController;
-  late TextEditingController qualificationController;
   late TextEditingController experienceController;
   late TextEditingController feeController;
   late TextEditingController bioController;
   late TextEditingController mobileController;
 
-  // Selected values (Reactive)
+  // Selected values
   final selectedHospitalIds = <String>[].obs;
   final selectedSpecializations = <String>[].obs;
+  final selectedQualifications = <String>[].obs;
   final selectedSymptoms = <String>[].obs;
   final selectedDiseases = <String>[].obs;
   final selectedLanguages = <String>[].obs;
-  
+
   final selectedGender = 'male'.obs;
   final selectedConsultationMode = 'Both'.obs;
 
-  // Image upload
   final pickedImage = Rxn<File>();
 
   @override
   void onInit() {
     super.onInit();
     nameController = TextEditingController();
-    qualificationController = TextEditingController();
     experienceController = TextEditingController();
     feeController = TextEditingController();
     bioController = TextEditingController();
@@ -62,7 +64,6 @@ class DoctorSelfProfileController extends GetxController {
   @override
   void onClose() {
     nameController.dispose();
-    qualificationController.dispose();
     experienceController.dispose();
     feeController.dispose();
     bioController.dispose();
@@ -93,12 +94,14 @@ class DoctorSelfProfileController extends GetxController {
         _firestoreService.getSpecializations(),
         _firestoreService.getSymptoms(),
         _firestoreService.getDiseases(),
+        _firestoreService.getQualifications(),
       ]);
 
       hospitals.assignAll(results[0] as List<HospitalModel>);
       availableSpecializations.assignAll(results[1] as List<String>);
       availableSymptoms.assignAll(results[2] as List<String>);
       availableDiseases.assignAll(results[3] as List<String>);
+      availableQualifications.assignAll(results[4] as List<String>);
     } catch (e) {
       print("Error fetching master data: $e");
     } finally {
@@ -118,24 +121,23 @@ class DoctorSelfProfileController extends GetxController {
         }
       }
     } catch (e) {
-      print("Error loading profile: $e");
-      Get.snackbar('Error', 'Failed to load profile');
+      AppSnackBar.show('Failed to load profile: $e');
     }
   }
 
   void _fillControllers(DoctorModel profile) {
     nameController.text = profile.doctorName;
-    qualificationController.text = profile.qualification;
     experienceController.text = profile.experience.toString();
     feeController.text = profile.consultationFee.toString();
     bioController.text = profile.biography ?? '';
     mobileController.text = profile.mobileNumber;
-    
+
     selectedGender.value = profile.gender;
     selectedConsultationMode.value = profile.consultationMode;
-    
+
     selectedHospitalIds.assignAll(profile.hospitalIds);
     selectedSpecializations.assignAll(profile.specialization);
+    selectedQualifications.assignAll(profile.qualification);
     selectedLanguages.assignAll(profile.languagesKnown);
     selectedSymptoms.assignAll(profile.symptomsCovered);
     selectedDiseases.assignAll(profile.diseasesCovered);
@@ -145,34 +147,20 @@ class DoctorSelfProfileController extends GetxController {
   void toggleEdit() {
     isEditing.value = !isEditing.value;
     if (!isEditing.value && doctorProfile.value != null) {
-      _fillControllers(doctorProfile.value!); 
+      _fillControllers(doctorProfile.value!);
     }
     update();
   }
 
   Future<void> pickImage() async {
     final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery, 
+      source: ImageSource.gallery,
       imageQuality: 50,
       maxWidth: 800,
     );
     if (image != null) {
       pickedImage.value = File(image.path);
       update();
-    }
-  }
-
-  Future<String?> _uploadImage(String userId) async {
-    if (pickedImage.value == null) return doctorProfile.value?.photoUrl;
-    
-    try {
-      // Path: doctor_profiles/{userId}/profile.jpg
-      final ref = _storage.ref().child('doctor_profiles').child(userId).child('profile.jpg');
-      await ref.putFile(pickedImage.value!);
-      return await ref.getDownloadURL();
-    } catch (e) {
-      print("Error uploading image: $e");
-      return null;
     }
   }
 
@@ -187,21 +175,28 @@ class DoctorSelfProfileController extends GetxController {
   Future<void> updateProfile() async {
     if (doctorProfile.value == null) return;
 
+    if (selectedQualifications.isEmpty) {
+      AppSnackBar.show('Please select at least one qualification');
+      return;
+    }
     if (selectedSpecializations.isEmpty) {
-      Get.snackbar('Error', 'Please select at least one specialization');
+      AppSnackBar.show('Please select at least one specialization');
       return;
     }
 
     isLoading.value = true;
     update();
     try {
-      // 1. Upload image if picked
-      final String? photoUrl = await _uploadImage(doctorProfile.value!.uid);
+      String? photoUrl = doctorProfile.value?.photoUrl;
+      if (pickedImage.value != null) {
+        final ref = _storage.ref().child('doctor_profiles').child(doctorProfile.value!.uid).child('profile.jpg');
+        await ref.putFile(pickedImage.value!);
+        photoUrl = await ref.getDownloadURL();
+      }
 
-      // 2. Prepare data map
       final data = {
         'doctorName': nameController.text.trim(),
-        'qualification': qualificationController.text.trim(),
+        'qualification': selectedQualifications.toList(),
         'specialization': selectedSpecializations.toList(),
         'experience': int.tryParse(experienceController.text) ?? 0,
         'consultationFee': double.tryParse(feeController.text) ?? 0.0,
@@ -215,18 +210,15 @@ class DoctorSelfProfileController extends GetxController {
         'symptomsCovered': selectedSymptoms.toList(),
         'diseasesCovered': selectedDiseases.toList(),
         'photoUrl': photoUrl,
-        'photo': photoUrl, // For seed script compatibility
+        'photo': photoUrl,
       };
 
-      // 3. Update Firestore
       await _firestoreService.updateDoctor(doctorProfile.value!.doctorId, data);
-      
-      // 4. Refresh local data
       await loadProfile();
       isEditing.value = false;
-      Get.snackbar('Success', 'Profile updated successfully', backgroundColor: Colors.green, colorText: Colors.white);
+      AppSnackBar.show('Profile updated successfully');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update profile: $e');
+      AppSnackBar.show('Failed to update profile: $e');
     } finally {
       isLoading.value = false;
       update();

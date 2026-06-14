@@ -42,6 +42,7 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
         return RefreshIndicator(
           onRefresh: controller.onRefresh,
           child: SingleChildScrollView(
+            controller: controller.scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +65,14 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
                       ),
                       const SizedBox(height: 12),
                       _buildAppointmentsList(),
-                      const SizedBox(height: 100),
+                      
+                      // Load More indicator
+                      Obx(() => controller.isLoadMore.value 
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : const SizedBox(height: 100)),
                     ],
                   ),
                 ),
@@ -120,7 +128,7 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
               decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(10)),
               child: IconButton(
                 icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-                onPressed: () => Get.offAllNamed(AppRoutes.roleSelection),
+                onPressed:controller.logout,
               ),
             ),
           ],
@@ -223,92 +231,186 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
         
         bool _isTimePassed(String date, String time) {
           try {
+            // Simple check: if date is today and time has passed, OR if date is in the past
             final String dtStr = "${date}T${time}:00";
             final DateTime apptTime = DateTime.parse(dtStr);
-            return DateTime.now().isAfter(apptTime);
+            return DateTime.now().isAfter(apptTime.subtract(const Duration(minutes: 10))); // Allow 10 mins early
           } catch (e) {
             return false;
           }
         }
 
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: AppColors.primarySurface, 
-                    child: const Icon(Icons.person, color: AppColors.primary, size: 20)
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(appt.patientName ?? "Patient", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        Text(appt.timeSlot, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
-                      ],
+        return InkWell(
+          onTap: () => _showAppointmentDetails(context, appt),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppColors.primarySurface, 
+                      child: const Icon(Icons.person, color: AppColors.primary, size: 20)
                     ),
-                  ),
-                  _statusBadge(appt.status),
-                ],
-              ),
-              const Divider(height: 24, thickness: 0.5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (appt.status == 'Pending') ...[
-                    TextButton(
-                      onPressed: () => controller.updateAppointmentStatus(appt.appointmentId, 'Cancelled'),
-                      child: const Text('Reject', style: TextStyle(color: Colors.red, fontSize: 13)),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => controller.updateAppointmentStatus(appt.appointmentId, 'Confirmed'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary, 
-                        foregroundColor: Colors.white, 
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(appt.patientName ?? "Patient", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(appt.timeSlot, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        ],
                       ),
-                      child: const Text('Accept', style: TextStyle(fontSize: 13)),
                     ),
-                  ] else if (appt.status == 'Confirmed')
-                    if (_isTimePassed(appt.appointmentDate, appt.timeSlot))
+                    _statusBadge(appt.status),
+                  ],
+                ),
+                if (appt.symptoms.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Text(
+                      'Symptoms: ${appt.symptoms}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+                const Divider(height: 24, thickness: 0.5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (appt.status == 'Pending') ...[
+                      TextButton(
+                        onPressed: () => controller.updateAppointmentStatus(appt.appointmentId, 'Cancelled'),
+                        child: const Text('Reject', style: TextStyle(color: Colors.red, fontSize: 13)),
+                      ),
+                      const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () => Get.toNamed(AppRoutes.addPrescription, arguments: {'appointment': appt}),
+                        onPressed: () => controller.updateAppointmentStatus(appt.appointmentId, 'Confirmed'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, 
+                          backgroundColor: AppColors.primary, 
                           foregroundColor: Colors.white, 
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        child: const Text('Add Prescription', style: TextStyle(fontSize: 13)),
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
-                            const SizedBox(width: 4),
-                            Text('Starts at ${appt.timeSlot}', style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
+                        child: const Text('Accept', style: TextStyle(fontSize: 13)),
                       ),
-                ],
-              ),
-            ],
+                    ] else if (appt.status == 'Confirmed')
+                      if (_isTimePassed(appt.appointmentDate, appt.timeSlot))
+                        ElevatedButton(
+                          onPressed: () => Get.toNamed(AppRoutes.addPrescription, arguments: {'appointment': appt}),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green, 
+                            foregroundColor: Colors.white, 
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Start Consultation', style: TextStyle(fontSize: 13)),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
+                              const SizedBox(width: 4),
+                              Text('Starts at ${appt.timeSlot}', style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  void _showAppointmentDetails(BuildContext context, AppointmentModel appt) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Appointment Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                _statusBadge(appt.status),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _detailItem(Icons.person_outline, 'Patient Name', appt.patientName ?? 'N/A'),
+            _detailItem(Icons.calendar_today_outlined, 'Date & Time', '${appt.appointmentDate} at ${appt.timeSlot}'),
+            _detailItem(Icons.medical_services_outlined, 'Consultation Type', appt.consultationType),
+            _detailItem(Icons.sick_outlined, 'Symptoms', appt.symptoms.isEmpty ? 'No symptoms reported' : appt.symptoms),
+            if (appt.notes != null && appt.notes!.isNotEmpty)
+              _detailItem(Icons.note_outlined, 'Notes', appt.notes!),
+            const SizedBox(height: 24),
+            if (appt.status == 'Confirmed')
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed(AppRoutes.addPrescription, arguments: {'appointment': appt});
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Start Consultation & Add Prescription', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _detailItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -318,6 +420,7 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
     if (status == 'Confirmed') { bg = Colors.green.shade50; text = Colors.green; }
     else if (status == 'Pending') { bg = Colors.orange.shade50; text = Colors.orange; }
     else if (status == 'Cancelled') { bg = Colors.red.shade50; text = Colors.red; }
+    else if (status == 'Completed') { bg = Colors.blue.shade50; text = Colors.blue; }
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

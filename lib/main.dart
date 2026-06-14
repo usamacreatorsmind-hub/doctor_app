@@ -1,20 +1,17 @@
+
 import 'package:doctor_app/utils/app_pages.dart' show AppPages;
 import 'package:doctor_app/utils/app_routes.dart' show AppRoutes;
+import 'package:doctor_app/utils/initial_binding.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'firebase_options.dart'; // Is line ko add karein
+import 'firebase_options.dart';
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
-    // Initialize Firebase with generated options
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -27,20 +24,20 @@ void main() async {
       ),
     );
 
-    runApp(const MediBookApp());
+    runApp(const DoctorAppointmentApp());
   } catch (e) {
     debugPrint("Initialization error: $e");
-    runApp(const MediBookApp());
+    runApp(const DoctorAppointmentApp());
   }
 }
 
-class MediBookApp extends StatelessWidget {
-  const MediBookApp({super.key});
+class DoctorAppointmentApp extends StatelessWidget {
+  const DoctorAppointmentApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'MediBook',
+      title: 'Doctor Appointment App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFF1565C0),
@@ -48,6 +45,7 @@ class MediBookApp extends StatelessWidget {
         fontFamily: 'Poppins',
         scaffoldBackgroundColor: const Color(0xFFF5F9FF),
       ),
+      initialBinding: InitialBinding(),
       initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,
       defaultTransition: Transition.fade,

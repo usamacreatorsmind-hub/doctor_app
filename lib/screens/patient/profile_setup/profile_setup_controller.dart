@@ -5,6 +5,7 @@ import '../../../models/patient_profile_model.dart';
 import '../../../models/user_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../../Repository/FirestoreService.dart';
+import '../../../utils/helper.dart';
 
 class ProfileSetupController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -255,7 +256,7 @@ class ProfileSetupController extends GetxController {
   void onNextStep() {
     if (currentStep.value == 0 && !step1FormKey.currentState!.validate()) return;
     if (currentStep.value == 0 && selectedGender.value.isEmpty) {
-      Get.snackbar('Required', 'Please select your gender', snackPosition: SnackPosition.BOTTOM);
+      AppSnackBar.show('Please select your gender');
       return;
     }
 
@@ -279,7 +280,7 @@ class ProfileSetupController extends GetxController {
   Future<void> _saveProfile() async {
     final user = _auth.currentUser;
     if (user == null) {
-      Get.snackbar('Error', 'User not logged in');
+      AppSnackBar.show('User not logged in');
       return;
     }
 
@@ -313,11 +314,10 @@ class ProfileSetupController extends GetxController {
       );
       
       await _firestoreService.savePatientProfile(user.uid, profile);
-
-      Get.snackbar('Success', 'Profile updated successfully', backgroundColor: Colors.green, colorText: Colors.white);
+      AppSnackBar.show('Profile updated successfully');
       Get.offAllNamed(AppRoutes.patientDashboard);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to save profile: $e', backgroundColor: Colors.red, colorText: Colors.white);
+      AppSnackBar.show('Failed to save profile: $e');
     } finally {
       isSaving.value = false;
       update();

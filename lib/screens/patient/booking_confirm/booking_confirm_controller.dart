@@ -6,6 +6,7 @@ import '../../../models/appointment_model.dart';
 import '../../../models/notification_model.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 
 class BookingConfirmController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -87,7 +88,7 @@ class BookingConfirmController extends GetxController {
         'time': selectedTimeSlot,
       });
     } catch (e) {
-      Get.snackbar('Error', 'Booking failed: $e');
+      AppSnackBar.show('Booking failed: $e');
     } finally {
       isLoading.value = false;
       update();

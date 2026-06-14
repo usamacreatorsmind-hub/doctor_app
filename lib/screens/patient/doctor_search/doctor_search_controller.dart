@@ -1,20 +1,30 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/doctor_model.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 
 class DoctorSearchController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
 
   final searchController = TextEditingController();
+  final scrollController = ScrollController();
+  
   final isLoading = false.obs;
+  final isLoadMore = false.obs;
   final searchResults = <DoctorModel>[].obs;
+
+  // Pagination fields
+  DocumentSnapshot? lastDocument;
+  final hasMore = true.obs;
+  final int limit = 10;
 
   // Filters
   final selectedSpecialization = ''.obs;
   final specializations = <String>[].obs;
-  final maxFee = 5000.0.obs; // Default high value to show all initially
+  final maxFee = 5000.0.obs;
 
   // Debounce query
   final searchQuery = "".obs;
@@ -27,11 +37,20 @@ class DoctorSearchController extends GetxController {
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null && args['specialization'] != null) {
       selectedSpecialization.value = args['specialization'];
+      searchController.text = args['specialization'];
+      searchQuery.value = args['specialization'];
     }
 
-    // Debounce: 500ms delay after typing stops before searching
+    // Debounce search for user typing
     debounce(searchQuery, (_) => searchDoctors(), time: const Duration(milliseconds: 500));
     
+    // Scroll listener for pagination
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >= scrollController.position.maxScrollExtent - 200) {
+        loadMoreDoctors();
+      }
+    });
+    // Always trigger initial search
     searchDoctors();
   }
 
@@ -50,19 +69,68 @@ class DoctorSearchController extends GetxController {
 
   Future<void> searchDoctors() async {
     isLoading.value = true;
+    lastDocument = null;
+    hasMore.value = true;
+    searchResults.clear();
     update();
 
     try {
-      final results = await _firestoreService.searchDoctors(
-        name: searchController.text.trim(),
+      final result = await _firestoreService.searchDoctorsPaginated(
+        name: searchQuery.value.trim(),
         specialization: selectedSpecialization.value,
         maxFee: maxFee.value,
+        lastDocument: null,
+        limit: limit,
       );
-      searchResults.value = results;
+
+      final List<DoctorModel> docs = List<DoctorModel>.from(result['docs']);
+      
+      // In-memory sort fallback for missing composite indexes
+      docs.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+
+      searchResults.assignAll(docs);
+      lastDocument = result['lastDoc'] as DocumentSnapshot?;
+      hasMore.value = result['hasMore'] as bool;
     } catch (e) {
-      Get.snackbar('Error', 'Search failed: $e');
+      if (e.toString().contains('failed-precondition')) {
+        AppSnackBar.show('Sorting index missing. Results may not be ordered correctly.');
+        print("Firestore Error: $e");
+      } else {
+        AppSnackBar.show('Failed to search doctors: $e');
+      }
     } finally {
       isLoading.value = false;
+      update();
+    }
+  }
+
+  Future<void> loadMoreDoctors() async {
+    if (isLoading.value || isLoadMore.value || !hasMore.value) return;
+
+    isLoadMore.value = true;
+    update();
+
+    try {
+      final result = await _firestoreService.searchDoctorsPaginated(
+        name: searchQuery.value.trim(),
+        specialization: selectedSpecialization.value,
+        maxFee: maxFee.value,
+        lastDocument: lastDocument,
+        limit: limit,
+      );
+
+      final List<DoctorModel> newDocs = List<DoctorModel>.from(result['docs']);
+      if (newDocs.isNotEmpty) {
+        searchResults.addAll(newDocs);
+        // Keep the list sorted in-memory
+        searchResults.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+        lastDocument = result['lastDoc'] as DocumentSnapshot?;
+      }
+      hasMore.value = result['hasMore'] as bool;
+    } catch (e) {
+      print("Error loading more doctors: $e");
+    } finally {
+      isLoadMore.value = false;
       update();
     }
   }
@@ -73,11 +141,6 @@ class DoctorSearchController extends GetxController {
     } else {
       selectedSpecialization.value = spec;
     }
-    searchDoctors();
-  }
-
-  void onFeeFilterChanged(double val) {
-    maxFee.value = val;
     searchDoctors();
   }
 
@@ -96,6 +159,7 @@ class DoctorSearchController extends GetxController {
   @override
   void onClose() {
     searchController.dispose();
+    scrollController.dispose();
     super.onClose();
   }
 }

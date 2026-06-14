@@ -5,6 +5,8 @@ import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
 import 'package:intl/intl.dart';
 
+import '../../../utils/helper.dart';
+
 class SlotSelectionController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -25,7 +27,8 @@ class SlotSelectionController extends GetxController {
       _loadDoctorSchedules();
     } else {
       Get.back();
-      Get.snackbar('Error', 'Doctor details not found');
+      AppSnackBar.show('Doctor details not found');
+
     }
   }
 
@@ -36,7 +39,7 @@ class SlotSelectionController extends GetxController {
       doctorSchedules.value = await _firestoreService.getDoctorSchedules(doctor.doctorId);
       _generateAvailableSlots();
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load doctor schedules: $e');
+      AppSnackBar.show('Failed to load doctor schedules: $e');
     } finally {
       isLoading.value = false;
       update();
@@ -97,7 +100,7 @@ class SlotSelectionController extends GetxController {
 
   void goToBookingConfirmation() {
     if (selectedDate.value == null || selectedTimeSlot.value == null) {
-      Get.snackbar('Selection Required', 'Please select a date and time slot.');
+      AppSnackBar.show('Please select a date and time slot.');
       return;
     }
     Get.toNamed(AppRoutes.bookingConfirm, arguments: {

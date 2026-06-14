@@ -1,3 +1,5 @@
+// File: lib/screens/doctor/profile/doctor_self_profile_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
@@ -74,8 +76,8 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                 backgroundImage: controller.pickedImage.value != null
                     ? FileImage(controller.pickedImage.value!) as ImageProvider
                     : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
-                        ? NetworkImage(profile.photoUrl!)
-                        : null,
+                    ? NetworkImage(profile.photoUrl!)
+                    : null,
                 child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
                     ? const Icon(Icons.person, color: Colors.white, size: 55)
                     : null,
@@ -116,7 +118,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoTile(Icons.school_outlined, 'Qualification', profile.qualification),
+        _infoTile(Icons.school_outlined, 'Qualification', profile.qualification.join(', ')),
         _infoTile(Icons.work_history_outlined, 'Experience', '${profile.experience} Years'),
         _infoTile(Icons.currency_rupee_rounded, 'Consultation Fee', '₹${profile.consultationFee}'),
         _infoTile(Icons.phone_android_rounded, 'Mobile', profile.mobileNumber),
@@ -126,11 +128,10 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
         _buildViewChips('Specializations', profile.specialization, AppColors.primary),
         const SizedBox(height: 20),
         _buildHospitalViewChips('Associated Hospitals', profile.hospitalIds),
-        
-        // Language section added here
+
         const SizedBox(height: 20),
-        Obx(() => _buildViewChips('Languages Known', controller.selectedLanguages, Colors.teal)),
-        
+        _buildViewChips('Languages Known', profile.languagesKnown, Colors.teal),
+
         const SizedBox(height: 20),
         _buildViewChips('Symptoms Covered', profile.symptomsCovered, Colors.orange),
         const SizedBox(height: 20),
@@ -174,7 +175,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
   Widget _buildViewChips(String title, List<String> items, Color color) {
     final filteredItems = items.where((i) => i.isNotEmpty).toList();
     if (filteredItems.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -193,31 +194,68 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
   }
 
   Widget _buildEditForm() {
-    final hospitalIds = controller.hospitals.map((h) => h.hospitalId).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTextField('Full Name', controller.nameController, Icons.person_outline),
-        _buildTextField('Qualification', controller.qualificationController, Icons.school_outlined),
+        const SizedBox(height: 12),
+
+        _buildChipSection(
+          'Qualifications (Multiple)',
+          controller.availableQualifications,
+          controller.selectedQualifications,
+          Colors.blueGrey,
+          Icons.school_outlined,
+        ),
+        const SizedBox(height: 20),
+
         Row(
           children: [
-            Expanded(child: _buildTextField('Experience', controller.experienceController, Icons.work_history_outlined, keyboardType: TextInputType.number)),
+            Expanded(child: _buildTextField('Experience (Years)', controller.experienceController, Icons.work_history_outlined, keyboardType: TextInputType.number)),
             const SizedBox(width: 12),
-            Expanded(child: _buildTextField('Fee', controller.feeController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number)),
+            Expanded(child: _buildTextField('Fee (₹)', controller.feeController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number)),
           ],
         ),
         _buildTextField('Mobile Number', controller.mobileController, Icons.phone_android_rounded, keyboardType: TextInputType.phone),
 
         const SizedBox(height: 12),
-        _buildChipSection('Select Hospitals', hospitalIds.obs, controller.selectedHospitalIds, Colors.blueGrey, isHospital: true),
+        _buildHospitalSelection(),
         const SizedBox(height: 20),
-        _buildChipSection('Specializations', controller.availableSpecializations, controller.selectedSpecializations, AppColors.primary),
+
+        _buildChipSection(
+          'Specializations (Multiple)',
+          controller.availableSpecializations,
+          controller.selectedSpecializations,
+          AppColors.primary,
+          Icons.verified_user_outlined,
+        ),
         const SizedBox(height: 20),
-        _buildChipSection('Symptoms Covered', controller.availableSymptoms, controller.selectedSymptoms, Colors.orange),
+
+        _buildChipSection(
+          'Symptoms Covered',
+          controller.availableSymptoms,
+          controller.selectedSymptoms,
+          Colors.orange,
+          Icons.sick_outlined,
+        ),
         const SizedBox(height: 20),
-        _buildChipSection('Diseases Covered', controller.availableDiseases, controller.selectedDiseases, Colors.redAccent),
+
+        _buildChipSection(
+          'Diseases Covered',
+          controller.availableDiseases,
+          controller.selectedDiseases,
+          Colors.redAccent,
+          Icons.bug_report_outlined,
+        ),
         const SizedBox(height: 20),
-        _buildChipSection('Languages Known', controller.availableLanguages, controller.selectedLanguages, Colors.teal),
+
+        _buildChipSection(
+          'Languages Known',
+          controller.availableLanguages,
+          controller.selectedLanguages,
+          Colors.teal,
+          Icons.translate_rounded,
+        ),
         const SizedBox(height: 20),
 
         _buildTextField('Biography', controller.bioController, Icons.description_outlined, maxLines: 4),
@@ -225,31 +263,139 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     );
   }
 
-  Widget _buildChipSection(String title, RxList<String> availableList, RxList<String> selectedList, Color activeColor, {bool isHospital = false}) {
+  Widget _buildHospitalSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        const Text(
+          'Select Hospitals (Multiple)',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 8),
-        Obx(() => Wrap(
-          spacing: 8,
-          children: availableList.map((item) {
-            final isSelected = selectedList.contains(item);
-            String label = item;
-            if (isHospital) {
-              label = controller.hospitals.firstWhereOrNull((h) => h.hospitalId == item)?.hospitalName ?? item;
-            }
-            return FilterChip(
-              label: Text(label, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : Colors.black87)),
-              selected: isSelected,
-              onSelected: (_) => controller.toggleSelection(selectedList, item),
-              selectedColor: activeColor,
-              checkmarkColor: Colors.white,
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? activeColor : AppColors.primaryBorder)),
-            );
-          }).toList(),
-        )),
+        Obx(() {
+          if (controller.hospitals.isEmpty) {
+            return const Text('No hospitals found', style: TextStyle(fontSize: 12, color: AppColors.textSecondary));
+          }
+
+          final unselected = controller.hospitals
+              .where((h) => !controller.selectedHospitalIds.contains(h.hospitalId))
+              .toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InputDecorator(
+                decoration: _inputDecoration('Select Hospital', Icons.local_hospital_rounded),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: null,
+                    isExpanded: true,
+                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                    hint: const Text('Choose Hospital', style: TextStyle(fontSize: 14, color: AppColors.textHint)),
+                    items: unselected.map((h) {
+                      return DropdownMenuItem(
+                        value: h.hospitalId,
+                        child: Text(h.hospitalName, style: const TextStyle(fontSize: 14)),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) controller.toggleSelection(controller.selectedHospitalIds, val);
+                    },
+                  ),
+                ),
+              ),
+              if (controller.selectedHospitalIds.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: controller.selectedHospitalIds.map((id) {
+                    final h = controller.hospitals.firstWhereOrNull((h) => h.hospitalId == id);
+                    return Chip(
+                      label: Text(h?.hospitalName ?? id, style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      backgroundColor: AppColors.primary,
+                      deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      onDeleted: () => controller.toggleSelection(controller.selectedHospitalIds, id),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildChipSection(
+      String title,
+      RxList<String> availableList,
+      RxList<String> selectedList,
+      Color activeColor,
+      IconData icon,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        Obx(() {
+          if (availableList.isEmpty) {
+            return const Text('Fetching...', style: TextStyle(fontSize: 12, color: AppColors.textSecondary));
+          }
+
+          final unselected = availableList.where((item) => !selectedList.contains(item)).toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InputDecorator(
+                decoration: _inputDecoration('Select ${title.split(' ').first}', icon),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: null,
+                    isExpanded: true,
+                    icon: Icon(Icons.arrow_drop_down, color: activeColor),
+                    hint: Text('Choose ${title.split(' ').first}', style: const TextStyle(fontSize: 14, color: AppColors.textHint)),
+                    items: unselected.map((item) {
+                      return DropdownMenuItem(
+                        value: item,
+                        child: Text(item, style: const TextStyle(fontSize: 14)),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) controller.toggleSelection(selectedList, val);
+                    },
+                  ),
+                ),
+              ),
+              if (selectedList.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: selectedList.map((item) {
+                    return Chip(
+                      label: Text(item, style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      backgroundColor: activeColor,
+                      deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      onDeleted: () => controller.toggleSelection(selectedList, item),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          );
+        }),
       ],
     );
   }
@@ -286,18 +432,28 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
           keyboardType: keyboardType,
           maxLines: maxLines,
           style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: label,
-            prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-          ),
+          decoration: _inputDecoration(label, icon),
         ),
         const SizedBox(height: 12),
       ],
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primaryBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
     );
   }
 

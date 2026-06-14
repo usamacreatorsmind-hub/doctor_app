@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../Repository/FirestoreService.dart';
+import '../../../Repository/auth_repository.dart';
 import '../../../models/user_model.dart';
 import '../../../models/patient_profile_model.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 
 class PatientProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  final AuthRepository _authRepository = AuthRepository();
   final isLoading = false.obs;
   final userModel = Rxn<UserModel>();
   final profileModel = Rxn<PatientProfileModel>();
@@ -34,7 +36,7 @@ class PatientProfileController extends GetxController {
       userModel.value = userData;
       profileModel.value = profileData;
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load profile: $e');
+      AppSnackBar.show('Failed to load profile: $e');
     } finally {
       isLoading.value = false;
       update();
@@ -46,8 +48,32 @@ class PatientProfileController extends GetxController {
     Get.toNamed(AppRoutes.profileSetup);
   }
 
+  // Future<void> logout() async {
+  //   await _auth.signOut();
+  //   Get.offAllNamed(AppRoutes.roleSelection);
+  // }
+
+
   Future<void> logout() async {
-    await _auth.signOut();
-    Get.offAllNamed(AppRoutes.roleSelection);
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _authRepository.signOut();
+              Get.offAllNamed(AppRoutes.login);
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
+
 }

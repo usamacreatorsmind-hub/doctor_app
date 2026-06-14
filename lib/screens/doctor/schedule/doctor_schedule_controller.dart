@@ -1,7 +1,9 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/doctor_schedule_model.dart';
+import '../../../utils/helper.dart';
 
 class DoctorScheduleController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -35,7 +37,6 @@ class DoctorScheduleController extends GetxController {
     try {
       String? doctorId = targetDoctorId;
       
-      // If no targetDoctorId, assume it's the logged-in doctor viewing their own schedule
       if (doctorId == null) {
         final user = _auth.currentUser;
         if (user != null) {
@@ -47,10 +48,11 @@ class DoctorScheduleController extends GetxController {
 
       if (doctorId != null) {
         final results = await _firestoreService.getDoctorSchedules(doctorId);
-        schedules.value = results;
+        schedules.assignAll(results);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load schedules: $e');
+      AppSnackBar.show('Failed to load schedules: $e');
+
     } finally {
       isLoading.value = false;
       update();
@@ -74,6 +76,7 @@ class DoctorScheduleController extends GetxController {
           'startTime': startTime,
           'endTime': endTime,
           'slotDuration': duration,
+          'updatedAt': DateTime.now(),
         });
       } else {
         final newSchedule = DoctorScheduleModel(
@@ -93,9 +96,24 @@ class DoctorScheduleController extends GetxController {
         await _firestoreService.createSchedule(newSchedule);
       }
       await loadSchedules();
-      Get.snackbar('Success', 'Schedule for $day updated');
+      AppSnackBar.show('Schedule for $day updated');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update: $e');
+      AppSnackBar.show('Failed to update: $e');
+
+    }
+  }
+
+  Future<void> removeSchedule(String scheduleId) async {
+    if (isReadOnly.value) return;
+    
+    try {
+      await _firestoreService.deleteSchedule(scheduleId);
+      await loadSchedules();
+      AppSnackBar.show('Schedule removed successfully');
+
+    } catch (e) {
+      AppSnackBar.show('Failed to remove schedule: $e');
+
     }
   }
 }

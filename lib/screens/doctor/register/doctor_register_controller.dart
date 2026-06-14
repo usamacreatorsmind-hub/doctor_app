@@ -7,6 +7,7 @@ import '../../../models/user_model.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/hospital_model.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 
 class DoctorRegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -18,7 +19,6 @@ class DoctorRegisterController extends GetxController {
   final emailController = TextEditingController();
   final mobileController = TextEditingController();
   final passwordController = TextEditingController();
-  final qualificationController = TextEditingController();
   final experienceController = TextEditingController();
   final feeController = TextEditingController();
   final bioController = TextEditingController();
@@ -37,11 +37,13 @@ class DoctorRegisterController extends GetxController {
   // Master Data Lists (Fetched from Firestore)
   final hospitals = <HospitalModel>[].obs;
   final availableSpecializations = <String>[].obs;
+  final availableQualifications = <String>[].obs; // Added
   final availableSymptoms = <String>[].obs;
   final availableDiseases = <String>[].obs;
   final availableLanguages = <String>['Hindi', 'English', 'Punjabi', 'Marathi', 'Gujarati', 'Tamil', 'Bengali'].obs;
 
   final selectedSpecializations = <String>[].obs;
+  final selectedQualifications = <String>[].obs; // Added
   final selectedSymptoms = <String>[].obs;
   final selectedDiseases = <String>[].obs;
   final selectedLanguages = <String>[].obs;
@@ -61,12 +63,25 @@ class DoctorRegisterController extends GetxController {
         _firestoreService.getSpecializations(),
         _firestoreService.getSymptoms(),
         _firestoreService.getDiseases(),
+        _firestoreService.getQualifications(), // Added
       ]);
 
       hospitals.assignAll(results[0] as List<HospitalModel>);
+
+
+
       availableSpecializations.assignAll(results[1] as List<String>);
       availableSymptoms.assignAll(results[2] as List<String>);
       availableDiseases.assignAll(results[3] as List<String>);
+      availableQualifications.assignAll(results[4] as List<String>);
+
+      print("DataGets hospitals  ${hospitals}");
+      print("DataGets hospitals  ${availableSpecializations}");
+      print("DataGets hospitals  ${availableSymptoms}");
+      print("DataGets hospitals  ${availableDiseases}");
+      print("DataGets hospitals  ${availableQualifications}");
+
+      // Added
     } catch (e) {
       print("Error fetching master data: $e");
     } finally {
@@ -98,11 +113,15 @@ class DoctorRegisterController extends GetxController {
   Future<void> onRegisterPressed() async {
     if (!formKey.currentState!.validate()) return;
     if (selectedHospitalIds.isEmpty) {
-      Get.snackbar('Error', 'Please select at least one hospital');
+      AppSnackBar.show('Please select at least one hospital');
+      return;
+    }
+    if (selectedQualifications.isEmpty) {
+      AppSnackBar.show('Please select at least one qualification');
       return;
     }
     if (selectedSpecializations.isEmpty) {
-      Get.snackbar('Error', 'Please select at least one specialization');
+      AppSnackBar.show('Please select at least one specialization');
       return;
     }
 
@@ -119,14 +138,14 @@ class DoctorRegisterController extends GetxController {
       if (userCredential != null && userCredential.user != null) {
         final String uid = userCredential.user!.uid;
 
-        // 2. Create Doctor Profile (Saving specialization as List)
+        // 2. Create Doctor Profile (Saving qualification & specialization as List)
         final doctor = DoctorModel(
           doctorId: '',
           uid: uid,
           hospitalId: selectedHospitalIds.first,
           hospitalIds: selectedHospitalIds.toList(),
           doctorName: nameController.text.trim(),
-          qualification: qualificationController.text.trim(),
+          qualification: selectedQualifications.toList(),
           specialization: selectedSpecializations.toList(),
           experience: int.tryParse(experienceController.text) ?? 0,
           consultationFee: double.tryParse(feeController.text) ?? 0.0,
@@ -172,14 +191,12 @@ class DoctorRegisterController extends GetxController {
             'status': 'pending',
           });
         }
-
-        Get.snackbar('Success', 'Registration successful! Please wait for admin approval.',
-            backgroundColor: Colors.green, colorText: Colors.white);
+          AppSnackBar.show('Registration successful! Please wait for admin approval.');
 
         Get.offAllNamed(AppRoutes.login);
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      AppSnackBar.show(e.toString());
     } finally {
       isLoading.value = false;
       update();

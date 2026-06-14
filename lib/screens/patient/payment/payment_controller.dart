@@ -5,6 +5,8 @@ import '../../../models/payment_model.dart';
 import '../../../utils/app_routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../utils/helper.dart';
+
 class PaymentController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -35,7 +37,7 @@ class PaymentController extends GetxController {
       time = args['time'];
     } else {
       Get.back();
-      Get.snackbar('Error', 'Payment details missing');
+      AppSnackBar.show('Payment details missing');
     }
   }
 
@@ -46,7 +48,7 @@ class PaymentController extends GetxController {
 
   Future<void> processPayment() async {
     if (_auth.currentUser == null) {
-      Get.snackbar('Error', 'User not logged in');
+      AppSnackBar.show('User not logged in');
       return;
     }
 
@@ -77,15 +79,14 @@ class PaymentController extends GetxController {
         'paymentStatus': 'Paid',
         'transactionId': payment.transactionId,
       });
-
-      Get.snackbar('Success', 'Payment successful!', backgroundColor: Colors.green, colorText: Colors.white);
+      AppSnackBar.show('Payment successful');
       Get.offNamed(AppRoutes.bookingSuccess, arguments: {
         'doctorName': doctorName,
         'date': date,
         'time': time,
       });
     } catch (e) {
-      Get.snackbar('Error', 'Payment failed: $e');
+      AppSnackBar.show('Failed to process payment: $e');
     } finally {
       isLoading.value = false;
       update();

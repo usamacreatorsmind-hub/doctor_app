@@ -20,34 +20,47 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
       ),
-      body: Obx(
-        () => Column(
-          children: [
-            _buildSearchBar(),
-            _buildSpecializationFilters(),
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (controller.searchResults.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: controller.searchResults.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          _buildSpecializationFilters(),
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (controller.searchResults.isEmpty) {
+                return _buildEmptyState();
+              }
+              return ListView.separated(
+                controller: controller.scrollController,
+                padding: const EdgeInsets.all(16),
+                itemCount: controller.searchResults.length + (controller.hasMore.value ? 1 : 0),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  if (index < controller.searchResults.length) {
                     return _DoctorResultCard(
                       doctor: controller.searchResults[index],
                       onTap: () => controller.goToDoctorProfile(controller.searchResults[index]),
                     );
-                  },
-                );
-              }),
-            ),
-          ],
-        ),
+                  }
+                  
+                  return controller.hasMore.value
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink();
+                },
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
@@ -58,7 +71,7 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: TextField(
         controller: controller.searchController,
-        onChanged: (val) => controller.searchDoctors(),
+        onChanged: controller.onSearchChanged,
         decoration: InputDecoration(
           hintText: 'Search doctor, symptoms, disease...',
           hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),

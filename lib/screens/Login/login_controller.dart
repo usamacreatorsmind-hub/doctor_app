@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../Repository/auth_repository.dart';
 import '../../models/user_model.dart';
 import '../../utils/app_routes.dart';
+import '../../utils/helper.dart';
 import '../role_selection/role_selection_controller.dart';
+import '../../services/notification_service.dart';
 
 enum LoginRole { hospitalAdmin, doctor, patient }
 
@@ -46,9 +48,6 @@ class LoginController extends GetxController {
 
   @override
   void onClose() {
-    // Note: Removed explicit dispose() calls for TextEditingControllers 
-    // to prevent "used after disposed" errors during route transitions 
-    // like Get.offAllNamed(). GetX will handle controller lifecycle.
     super.onClose();
   }
 
@@ -82,33 +81,23 @@ class LoginController extends GetxController {
         final String uid = userCredential.user!.uid;
         final String email = userCredential.user!.email ?? emailController.text.trim();
 
-        // 1. Try to get user data by Auth UID
+        // Update FCM Token immediately after login
+        NotificationService.to.updateToken();
+
         UserModel? userData = await _authRepository.getUserData(uid);
         
-        // 2. Fallback Migration: If UID not found, search by email
         if (userData == null) {
-          print("UID not found, searching by email: $email");
           userData = await _authRepository.getUserByEmail(email);
-          
           if (userData != null) {
-            print("Record found by email. Migrating from ${userData.uid} to UID: $uid");
             String oldDocId = userData.uid;
-            
-            // Update the UID and migrate the document
             userData = userData.copyWith(uid: uid);
             await _authRepository.migrateUser(oldDocId, userData);
           }
         }
 
-        print("userData ${userData}");
-
         if (userData != null) {
-          Get.snackbar('Success', 'Welcome back, ${userData.name}!',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.green,
-              colorText: Colors.white);
+          AppSnackBar.show('Welcome back, ${userData.name}!');
 
-          // Role-based Navigation synced with Firestore keys
           if (userData.role == 'patient') {
             Get.offAllNamed(AppRoutes.patientDashboard);
           } else if (userData.role == 'doctor') {
@@ -119,13 +108,14 @@ class LoginController extends GetxController {
             Get.offAllNamed(AppRoutes.roleSelection);
           }
         } else {
-          Get.snackbar('Error', 'User record not found in database. Please register.');
+          AppSnackBar.show("User record not found in database. Please register.");
         }
       }
     } on FirebaseAuthException catch (e) {
-      Get.snackbar('Error', e.message ?? 'Login failed');
+      AppSnackBar.show(e.message ?? 'Login failed');
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      AppSnackBar.show(e.toString());
+      print(e.toString());
     } finally {
       isLoading.value = false;
       update();
@@ -134,7 +124,7 @@ class LoginController extends GetxController {
 
   Future<void> onSendOtpPressed() async {
     if (mobileController.text.isEmpty || mobileController.text.length != 10) {
-      Get.snackbar('Invalid Number', 'Please enter a valid 10-digit mobile number');
+      AppSnackBar.show('Please enter a valid 10-digit mobile number');
       return;
     }
 
@@ -148,7 +138,7 @@ class LoginController extends GetxController {
         verificationFailed: (FirebaseAuthException e) {
           isLoading.value = false;
           update();
-          Get.snackbar('Error', e.message ?? 'Verification failed');
+          AppSnackBar.show(e.message ?? 'Verification failed');
         },
         codeSent: (String verificationId, int? resendToken) {
           isLoading.value = false;
@@ -168,7 +158,7 @@ class LoginController extends GetxController {
     } catch (e) {
       isLoading.value = false;
       update();
-      Get.snackbar('Error', e.toString());
+      AppSnackBar.show(e.toString());
     }
   }
 

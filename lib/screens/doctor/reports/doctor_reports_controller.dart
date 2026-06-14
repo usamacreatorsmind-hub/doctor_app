@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/appointment_model.dart';
+import '../../../utils/helper.dart';
 
 class DoctorReportsController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -43,7 +44,7 @@ class DoctorReportsController extends GetxController {
         totalEarnings.value = earnings;
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to calculate reports');
+      AppSnackBar.show('Failed to calculate reports: $e');
     } finally {
       isLoading.value = false;
       update();

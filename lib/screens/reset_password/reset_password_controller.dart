@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_routes.dart';
+import '../../utils/helper.dart';
 
 class ResetPasswordController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -38,13 +39,12 @@ class ResetPasswordController extends GetxController {
       if (user != null) {
         await user.updatePassword(passwordController.text.trim());
         Get.offAllNamed(AppRoutes.login);
-        Get.snackbar('Success', 'Password reset successfully. Please login with your new password.',
-            backgroundColor: Colors.green, colorText: Colors.white);
+        AppSnackBar.show('Password reset successfully. Please login with your new password.');
       } else {
-        Get.snackbar('Error', 'User session not found. Please try again.');
+        AppSnackBar.show('User session not found. Please try again.');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to reset password: ${e.toString()}');
+      AppSnackBar.show('Failed to reset password: ${e.toString()}');
     } finally {
       isLoading.value = false;
       update();

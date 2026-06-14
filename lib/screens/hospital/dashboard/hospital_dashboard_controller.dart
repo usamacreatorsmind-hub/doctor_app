@@ -14,7 +14,11 @@ class HospitalDashboardController extends GetxController {
   final hospital = Rxn<HospitalModel>();
   final doctors = <DoctorModel>[].obs;
   final todayAppointments = <AppointmentModel>[].obs;
+  
+  // Analytics
+  final activeDoctorsCount = 0.obs;
   final pendingRequestsCount = 0.obs;
+  final todayRevenue = 0.0.obs;
 
   @override
   void onInit() {
@@ -42,15 +46,20 @@ class HospitalDashboardController extends GetxController {
       if (managedHospital != null) {
         hospital.value = managedHospital;
         
+        // 1. Doctors Stats
         final hospitalDoctors = await _firestoreService.getDoctorsByHospital(managedHospital.hospitalId);
         doctors.assignAll(hospitalDoctors);
+        activeDoctorsCount.value = hospitalDoctors.where((d) => d.status.toLowerCase() == 'active').length;
 
+        // 2. Pending Join Requests
         final requests = await _firestoreService.getHospitalJoinRequests(managedHospital.hospitalId);
         pendingRequestsCount.value = requests.length;
 
+        // 3. Today's Appointments & Revenue
         final today = DateTime.now().toIso8601String().split('T')[0];
         final appts = await _firestoreService.getHospitalAppointments(managedHospital.hospitalId, date: today);
         
+        double revenue = 0;
         List<AppointmentModel> enhancedAppts = [];
         for (var appt in appts) {
           final patientData = await _firestoreService.getUser(appt.patientId);
@@ -60,8 +69,13 @@ class HospitalDashboardController extends GetxController {
             patientName: patientData?.name ?? 'Patient',
             doctorName: doctor?.doctorName ?? 'Doctor',
           ));
+
+          if (appt.paymentStatus == 'Paid' || appt.paymentStatus == 'Success') {
+            revenue += appt.fee;
+          }
         }
         todayAppointments.assignAll(enhancedAppts);
+        todayRevenue.value = revenue;
       }
     } catch (e) {
       print("Error loading dashboard data: $e");
@@ -92,6 +106,9 @@ class HospitalDashboardController extends GetxController {
 
   void goToHospitalProfile() => Get.toNamed(AppRoutes.hospitalProfile);
   void goToAllAppointments() => Get.toNamed(AppRoutes.hospitalAppointments, arguments: {'hospitalId': hospital.value?.hospitalId});
+  void goToReports() => Get.toNamed(AppRoutes.hospitalReports);
+  void goToDepartments() => Get.toNamed(AppRoutes.hospitalDepartments);
+  void goToNotifications() => Get.toNamed(AppRoutes.notifications);
 
   Future<void> onRefresh() async => await loadDashboardData();
 }

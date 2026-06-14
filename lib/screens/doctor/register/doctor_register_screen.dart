@@ -1,3 +1,5 @@
+// File: lib/screens/doctor/register/doctor_register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
@@ -63,16 +65,26 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                         const SizedBox(height: 12),
 
                         _buildHospitalSelection(),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 20),
 
-                        _buildInputField(
-                          label: 'Qualification',
-                          hint: 'MBBS, MD (Cardiology)',
-                          icon: Icons.school_outlined,
-                          controller: controller.qualificationController,
-                          validator: (v) => (v == null || v.isEmpty) ? 'Enter qualification' : null,
+                        _buildChipSection(
+                          'Qualifications (Multiple)',
+                          controller.availableQualifications,
+                          controller.selectedQualifications,
+                          Colors.blueGrey,
+                          Icons.school_outlined,
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 20),
+
+                        _buildChipSection(
+                          'Specializations (Multiple)',
+                          controller.availableSpecializations,
+                          controller.selectedSpecializations,
+                          AppColors.primary,
+                          Icons.verified_user_outlined,
+                        ),
+                        const SizedBox(height: 20),
+
                         Row(
                           children: [
                             Expanded(
@@ -103,18 +115,11 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                         const SizedBox(height: 20),
 
                         _buildChipSection(
-                          'Specializations',
-                          controller.availableSpecializations,
-                          controller.selectedSpecializations,
-                          AppColors.primary,
-                        ),
-                        const SizedBox(height: 20),
-
-                        _buildChipSection(
                           'Symptoms Covered',
                           controller.availableSymptoms,
                           controller.selectedSymptoms,
                           Colors.orange,
+                          Icons.sick_outlined,
                         ),
                         const SizedBox(height: 20),
 
@@ -123,6 +128,7 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                           controller.availableDiseases,
                           controller.selectedDiseases,
                           Colors.redAccent,
+                          Icons.bug_report_outlined,
                         ),
                         const SizedBox(height: 20),
 
@@ -131,6 +137,7 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                           controller.availableLanguages,
                           controller.selectedLanguages,
                           Colors.teal,
+                          Icons.translate_rounded,
                         ),
                         const SizedBox(height: 20),
 
@@ -233,6 +240,8 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
     String? Function(String?)? validator,
     String? prefix,
     int maxLines = 1,
+    Widget? suffix, // New
+    bool obscureText = false, // New
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,9 +259,13 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
-          maxLines: maxLines,
+          maxLines: obscureText ? 1 : maxLines, // Obscure text requires maxLines: 1
+          obscureText: obscureText,
           style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-          decoration: _inputDecoration(hint, icon).copyWith(prefixText: prefix),
+          decoration: _inputDecoration(hint, icon).copyWith(
+            prefixText: prefix,
+            suffixIcon: suffix, // Correctly set suffix icon
+          ),
         ),
       ],
     );
@@ -278,30 +291,57 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             );
           }
-          return Wrap(
-            spacing: 8,
-            runSpacing: 0,
-            children: controller.hospitals.map((h) {
-              final isSelected = controller.selectedHospitalIds.contains(h.hospitalId);
-              return FilterChip(
-                label: Text(
-                  h.hospitalName,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
+
+          final unselected = controller.hospitals
+              .where((h) => !controller.selectedHospitalIds.contains(h.hospitalId))
+              .toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 50,
+                child: InputDecorator(
+                  decoration: _inputDecoration('Select Hospital', Icons.local_hospital_rounded),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: null,
+                      isExpanded: true,
+                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                      hint: const Text('Choose Hospital', style: TextStyle(fontSize: 14, color: AppColors.textHint)),
+                      items: unselected.map((h) {
+                        return DropdownMenuItem(
+                          value: h.hospitalId,
+                          child: Text(h.hospitalName, style: const TextStyle(fontSize: 14)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) controller.toggleHospital(val);
+                      },
+                    ),
                   ),
                 ),
-                selected: isSelected,
-                onSelected: (_) => controller.toggleHospital(h.hospitalId),
-                selectedColor: AppColors.primary,
-                checkmarkColor: Colors.white,
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
+              ),
+              if (controller.selectedHospitalIds.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: controller.selectedHospitalIds.map((id) {
+                    final h = controller.hospitals.firstWhere((h) => h.hospitalId == id);
+                    return Chip(
+                      label: Text(h.hospitalName, style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      backgroundColor: AppColors.primary,
+                      deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      onDeleted: () => controller.toggleHospital(id),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+              ],
+            ],
           );
         }),
       ],
@@ -309,11 +349,12 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
   }
 
   Widget _buildChipSection(
-    String title,
-    RxList<String> availableList,
-    RxList<String> selectedList,
-    Color activeColor,
-  ) {
+      String title,
+      RxList<String> availableList,
+      RxList<String> selectedList,
+      Color activeColor,
+      IconData icon,
+      ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -329,34 +370,58 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
         Obx(() {
           if (availableList.isEmpty) {
             return const Text(
-              'Loading data...',
+              'Fetching...',
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             );
           }
-          return Wrap(
-            spacing: 8,
-            runSpacing: 0,
-            children: availableList.map((item) {
-              final isSelected = selectedList.contains(item);
-              return FilterChip(
-                label: Text(
-                  item,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
+
+          final unselected = availableList.where((item) => !selectedList.contains(item)).toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 50,
+                child: InputDecorator(
+                  decoration: _inputDecoration('Select ${title.split(' ').first}', icon),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: null,
+                      isExpanded: true,
+                      icon: Icon(Icons.arrow_drop_down, color: activeColor),
+                      hint: Text('Choose ${title.split(' ').first}', style: const TextStyle(fontSize: 14, color: AppColors.textHint)),
+                      items: unselected.map((item) {
+                        return DropdownMenuItem(
+                          value: item,
+                          child: Text(item, style: const TextStyle(fontSize: 14)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) controller.toggleSelection(selectedList, val);
+                      },
+                    ),
                   ),
                 ),
-                selected: isSelected,
-                onSelected: (_) => controller.toggleSelection(selectedList, item),
-                selectedColor: activeColor,
-                checkmarkColor: Colors.white,
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: isSelected ? activeColor : AppColors.primaryBorder),
+              ),
+              if (selectedList.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: selectedList.map((item) {
+                    return Chip(
+                      label: Text(item, style: const TextStyle(fontSize: 12, color: Colors.white)),
+                      backgroundColor: activeColor,
+                      deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      onDeleted: () => controller.toggleSelection(selectedList, item),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+              ],
+            ],
           );
         }),
       ],
@@ -369,35 +434,48 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
       children: [
         const Text(
           'Gender',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
-        Obx(
-          () => Row(
+        Obx(() => Row(
+          children: [
+            _genderOption('male', Icons.male, controller.selectedGender.value == 'male'),
+            const SizedBox(width: 12),
+            _genderOption('female', Icons.female, controller.selectedGender.value == 'female'),
+          ],
+        )),
+      ],
+    );
+  }
+
+  Widget _genderOption(String val, IconData icon, bool isSelected) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => controller.selectGender(val),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _choiceCard(
-                'Male',
-                'male',
-                Icons.male_rounded,
-                controller.selectedGender.value == 'male',
-                () => controller.selectGender('male'),
-              ),
-              const SizedBox(width: 10),
-              _choiceCard(
-                'Female',
-                'female',
-                Icons.female_rounded,
-                controller.selectedGender.value == 'female',
-                () => controller.selectGender('female'),
+              Icon(icon, size: 18, color: isSelected ? Colors.white : AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                val.capitalizeFirst!,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -407,144 +485,76 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
       children: [
         const Text(
           'Consultation Mode',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
-        Obx(
-          () => Row(
-            children: [
-              _choiceCard(
-                'Online',
-                'Online',
-                Icons.videocam_outlined,
-                controller.selectedConsultationMode.value == 'Online',
-                () => controller.selectMode('Online'),
-              ),
-              const SizedBox(width: 8),
-              _choiceCard(
-                'Offline',
-                'Offline',
-                Icons.person_outline,
-                controller.selectedConsultationMode.value == 'Offline',
-                () => controller.selectMode('Offline'),
-              ),
-              const SizedBox(width: 8),
-              _choiceCard(
-                'Both',
-                'Both',
-                Icons.devices_other_outlined,
-                controller.selectedConsultationMode.value == 'Both',
-                () => controller.selectMode('Both'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _choiceCard(
-    String label,
-    String value,
-    IconData icon,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primarySurface : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.primaryBorder,
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 20, color: isSelected ? AppColors.primary : AppColors.textSecondary),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        Obx(() => Row(
+          children: ['Both', 'Online', 'Offline'].map((m) {
+            final isSelected = controller.selectedConsultationMode.value == m;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => controller.selectMode(m),
+                child: Container(
+                  margin: EdgeInsets.only(right: m == 'Offline' ? 0 : 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
+                  ),
+                  child: Center(
+                    child: Text(
+                      m,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? Colors.white : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          }).toList(),
+        )),
+      ],
     );
   }
 
   Widget _buildPasswordFieldFix() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Password',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
+    return Obx(() => _buildInputField(
+      label: 'Create Password',
+      hint: 'Min 6 characters',
+      icon: controller.isPasswordHidden.value ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+      controller: controller.passwordController,
+      validator: controller.validatePassword,
+      obscureText: controller.isPasswordHidden.value, // Passed directly
+      suffix: IconButton( // Passed directly as suffix
+        icon: Icon(
+          controller.isPasswordHidden.value ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+          size: 20,
+          color: AppColors.textSecondary,
         ),
-        const SizedBox(height: 6),
-        Obx(
-          () => TextFormField(
-            controller: controller.passwordController,
-            obscureText: controller.isPasswordHidden.value,
-            validator: controller.validatePassword,
-            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-            decoration: _inputDecoration('Min 6 characters', Icons.lock_outline_rounded).copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                  controller.isPasswordHidden.value
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                ),
-                onPressed: controller.togglePasswordVisibility,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+        onPressed: controller.togglePasswordVisibility,
+      ),
+    ));
   }
 
   Widget _buildRegisterButton() {
-    return Obx(
-      () => SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: controller.isLoading.value ? null : controller.onRegisterPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-          ),
-          child: controller.isLoading.value
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                )
-              : const Text(
-                  'Complete Registration',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                ),
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: controller.isLoading.value ? null : controller.onRegisterPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          elevation: 0,
         ),
+        child: controller.isLoading.value
+            ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+            : const Text('Complete Registration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -552,15 +562,11 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
   InputDecoration _inputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
-      prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+      prefixIcon: Icon(icon, size: 20, color: AppColors.primary.withOpacity(0.7)),
+      hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primaryBorder),
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primaryBorder),
@@ -568,6 +574,14 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
     );
   }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../utils/app_routes.dart' show AppRoutes;
+import '../../utils/helper.dart';
 
 enum UserRole { hospitalAdmin, doctor, patient }
 
@@ -15,17 +16,9 @@ class RoleSelectionController extends GetxController {
 
   void onContinue() {
     if (selectedRole.value == null) {
-      Get.snackbar(
-        'Select Role',
-        'Please select your role to continue',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF1565C0),
-        colorText: const Color(0xFFFFFFFF),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        duration: const Duration(seconds: 2),
-        icon: const Icon(Icons.info_outline_rounded, color: Colors.white),
-      );
+
+
+      AppSnackBar.show('Please select your role to continue');
       return;
     }
 

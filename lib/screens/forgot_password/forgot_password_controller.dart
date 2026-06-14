@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../Repository/auth_repository.dart';
 import '../../utils/app_routes.dart';
+import '../../utils/helper.dart';
 import '../Login/login_controller.dart';
 
 enum ResetMethod { email, otp }
@@ -42,9 +43,9 @@ class ForgotPasswordController extends GetxController {
       update();
       await FirebaseAuth.instance.sendPasswordResetEmail(email: emailCtrl.text.trim());
       linkSent.value = true;
-      Get.snackbar('Success', 'Password reset link sent to email', snackPosition: SnackPosition.BOTTOM);
+      AppSnackBar.show('Password reset link sent to email');
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      AppSnackBar.show(e.toString());
     } finally {
       isLoading.value = false;
       update();
@@ -59,7 +60,8 @@ class ForgotPasswordController extends GetxController {
       await _authRepository.verifyPhoneNumber(
         mobileCtrl.text.trim(),
         verificationCompleted: (PhoneAuthCredential credential) {},
-        verificationFailed: (e) => Get.snackbar('Error', e.message ?? 'Failed'),
+        verificationFailed: (e) =>
+        AppSnackBar.show(e.message ?? 'Verification failed'),
         codeSent: (String vId, int? resendToken) {
           Get.toNamed(AppRoutes.otpVerification, arguments: {
             'mobile': mobileCtrl.text.trim(),
@@ -72,7 +74,7 @@ class ForgotPasswordController extends GetxController {
         codeAutoRetrievalTimeout: (vId) {},
       );
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      AppSnackBar.show(e.toString());
     } finally {
       isLoading.value = false;
       update();

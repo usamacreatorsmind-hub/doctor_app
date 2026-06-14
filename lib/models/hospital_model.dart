@@ -43,7 +43,37 @@ class HospitalModel {
     this.updatedAt,
   });
 
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  static DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   factory HospitalModel.fromMap(Map<String, dynamic> map, String id) {
+    // Handle departments as List safely
+    List<String> deps = [];
+    if (map['departments'] is List) {
+      deps = List<String>.from(map['departments']);
+    } else if (map['departments'] != null) {
+      deps = [map['departments'].toString()];
+    }
+
+    // Handle workingHours safely
+    Map<String, String> hours = {'open': '09:00 AM', 'close': '08:00 PM'};
+    if (map['workingHours'] is Map) {
+      map['workingHours'].forEach((k, v) {
+        hours[k.toString()] = v.toString();
+      });
+    }
+
     return HospitalModel(
       hospitalId: id,
       adminUserId: map['adminUserId'] ?? map['adminUid'] ?? '',
@@ -57,13 +87,13 @@ class HospitalModel {
       email: map['email'] ?? '',
       website: map['website'],
       logo: map['logo'] ?? map['logoUrl'],
-      departments: List<String>.from(map['departments'] ?? []),
-      workingHours: Map<String, String>.from(map['workingHours'] ?? {'open': '09:00 AM', 'close': '08:00 PM'}),
+      departments: deps,
+      workingHours: hours,
       emergencyAvailable: map['emergencyAvailable'] ?? false,
       status: map['status'] ?? 'active',
       createdBy: map['createdBy'],
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
+      createdAt: _parseDateTime(map['createdAt']),
+      updatedAt: _parseDateTimeNullable(map['updatedAt']),
     );
   }
 

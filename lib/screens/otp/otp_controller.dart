@@ -7,6 +7,7 @@ import '../../Repository/FirestoreService.dart';
 import '../../models/user_model.dart';
 import '../../models/patient_profile_model.dart';
 import '../../utils/app_routes.dart';
+import '../../utils/helper.dart';
 import '../Login/login_controller.dart' show LoginRole;
 
 class OtpController extends GetxController {
@@ -18,10 +19,13 @@ class OtpController extends GetxController {
   late bool isLogin;
   bool isForgotPassword = false;
   String? verificationId;
-  
+
   String? name, email, password, dob, gender, bloodGroup;
 
-  final List<TextEditingController> otpControllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> otpControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> focusNodes = List.generate(6, (_) => FocusNode());
 
   final RxInt timerSeconds = 30.obs;
@@ -36,18 +40,18 @@ class OtpController extends GetxController {
     super.onInit();
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null) {
-      mobileNumber     = args['mobile'] ?? '';
-      role             = args['role']   ?? LoginRole.patient;
-      isLogin          = args['isLogin'] ?? true;
+      mobileNumber = args['mobile'] ?? '';
+      role = args['role'] ?? LoginRole.patient;
+      isLogin = args['isLogin'] ?? true;
       isForgotPassword = args['isForgotPassword'] ?? false;
-      verificationId   = args['verificationId'];
-      
+      verificationId = args['verificationId'];
+
       if (!isLogin) {
-        name       = args['name'];
-        email      = args['email'];
-        password   = args['password'];
-        dob        = args['dob'];
-        gender     = args['gender'];
+        name = args['name'];
+        email = args['email'];
+        password = args['password'];
+        dob = args['dob'];
+        gender = args['gender'];
         bloodGroup = args['bloodGroup'];
       }
     }
@@ -59,8 +63,12 @@ class OtpController extends GetxController {
     canResend.value = false;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (timerSeconds.value > 0) timerSeconds.value--;
-      else { canResend.value = true; timer.cancel(); }
+      if (timerSeconds.value > 0)
+        timerSeconds.value--;
+      else {
+        canResend.value = true;
+        timer.cancel();
+      }
     });
   }
 
@@ -104,18 +112,22 @@ class OtpController extends GetxController {
 
       if (isForgotPassword) {
         // Sign in with Phone to allow password update
-        final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(
+          phoneAuthCredential,
+        );
         if (userCredential.user != null) {
           Get.offNamed(AppRoutes.resetPassword);
         }
       } else if (isLogin) {
-        final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(
+          phoneAuthCredential,
+        );
         if (userCredential.user != null) {
           UserModel? userData = await _firestoreService.getUser(userCredential.user!.uid);
           if (userData != null) {
             _navigateAfterVerification(userData.role);
           } else {
-            Get.snackbar('Error', 'User record not found. Please register.');
+            AppSnackBar.show("User record not found in database. Please register.");
           }
         }
       } else {
@@ -137,7 +149,9 @@ class OtpController extends GetxController {
             name: name!,
             email: email!,
             mobile: mobileNumber,
-            role: role.name == 'patient' ? 'patient' : (role.name == 'doctor' ? 'doctor' : 'hospital_admin'),
+            role: role.name == 'patient'
+                ? 'patient'
+                : (role.name == 'doctor' ? 'doctor' : 'hospital_admin'),
             status: 'active',
             createdAt: DateTime.now(),
           );
@@ -158,13 +172,13 @@ class OtpController extends GetxController {
           } else {
             Get.offAllNamed(AppRoutes.hospitalDashboard);
           }
-          Get.snackbar('Success', 'Account created successfully!');
+          AppSnackBar.show('Account created successfully!');
         }
       }
     } on FirebaseAuthException catch (e) {
-      Get.snackbar('Error', e.message ?? 'Verification failed');
+      AppSnackBar.show(e.message ?? 'Verification failed');
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      AppSnackBar.show(e.toString());
     } finally {
       isLoading.value = false;
       update();
@@ -172,10 +186,14 @@ class OtpController extends GetxController {
   }
 
   void _navigateAfterVerification(String roleStr) {
-    if (roleStr == 'patient') Get.offAllNamed(AppRoutes.patientDashboard);
-    else if (roleStr == 'doctor') Get.offAllNamed(AppRoutes.doctorDashboard);
-    else if (roleStr == 'hospital_admin') Get.offAllNamed(AppRoutes.hospitalDashboard);
-    else Get.offAllNamed(AppRoutes.roleSelection);
+    if (roleStr == 'patient')
+      Get.offAllNamed(AppRoutes.patientDashboard);
+    else if (roleStr == 'doctor')
+      Get.offAllNamed(AppRoutes.doctorDashboard);
+    else if (roleStr == 'hospital_admin')
+      Get.offAllNamed(AppRoutes.hospitalDashboard);
+    else
+      Get.offAllNamed(AppRoutes.roleSelection);
   }
 
   Future<void> resendOtp() async {
@@ -186,11 +204,13 @@ class OtpController extends GetxController {
       await _authRepository.verifyPhoneNumber(
         mobileNumber,
         verificationCompleted: (PhoneAuthCredential credential) {},
-        verificationFailed: (FirebaseAuthException e) => Get.snackbar('Error', e.message ?? 'Failed'),
+        verificationFailed: (FirebaseAuthException e) =>
+            AppSnackBar.show(e.message ?? 'Verification failed'),
+
         codeSent: (String vId, int? resendToken) {
           verificationId = vId;
           _startTimer();
-          Get.snackbar('OTP Sent', 'New code sent to +91 $mobileNumber');
+          AppSnackBar.show('New code sent to +91 $mobileNumber');
         },
         codeAutoRetrievalTimeout: (String vId) {},
       );

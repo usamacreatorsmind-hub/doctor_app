@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
+import '../../../utils/app_routes.dart';
 import 'patient_profile_controller.dart';
 
 class PatientProfileScreen extends GetView<PatientProfileController> {
@@ -41,6 +41,22 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
               _buildProfileHeader(user),
               const SizedBox(height: 24),
 
+              // Action Cards for Records & Appointments
+              _buildActionCard(
+                icon: Icons.description_rounded,
+                title: 'Medical Records',
+                subtitle: 'View your prescriptions',
+                onTap: () => Get.toNamed(AppRoutes.patientRecords),
+              ),
+              const SizedBox(height: 12),
+              _buildActionCard(
+                icon: Icons.calendar_month_rounded,
+                title: 'Appointment History',
+                subtitle: 'Check your visit history',
+                onTap: () => Get.toNamed(AppRoutes.patientAppointments),
+              ),
+              const SizedBox(height: 24),
+
               // Basic Info Card
               _buildInfoSection('Basic Information', [
                 _infoRow(Icons.email_outlined, 'Email', user.email),
@@ -50,21 +66,14 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
               ]),
 
               const SizedBox(height: 16),
-
-              // Medical History Card
               _buildMedicalHistory(profile),
-
               const SizedBox(height: 16),
-
-              // Address Card
               _buildInfoSection('Address', [
                 _infoRow(Icons.location_on_outlined, 'Address', profile?.address ?? 'Not set'),
                 _infoRow(Icons.location_city_rounded, 'City', '${profile?.city ?? ""}, ${profile?.state ?? ""}'),
               ]),
 
               const SizedBox(height: 32),
-
-              // Logout Button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -98,6 +107,41 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
         Text(user.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         Text('Patient ID: ${user.uid.substring(0, 8).toUpperCase()}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
       ],
+    );
+  }
+
+  Widget _buildActionCard({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: AppColors.primary, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
+          ],
+        ),
+      ),
     );
   }
 

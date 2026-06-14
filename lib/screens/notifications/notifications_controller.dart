@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../Repository/FirestoreService.dart';
 import '../../models/notification_model.dart';
+import '../../utils/helper.dart';
 
 class NotificationsController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -36,7 +37,7 @@ class NotificationsController extends GetxController {
     try {
       await _firestoreService.markNotificationRead(id);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to mark as read');
+      AppSnackBar.show('Failed to mark as read: $e');
     }
   }
 
@@ -46,7 +47,7 @@ class NotificationsController extends GetxController {
       try {
         await _firestoreService.markAllNotificationsRead(user.uid);
       } catch (e) {
-        Get.snackbar('Error', 'Failed to mark all as read');
+        AppSnackBar.show('Failed to mark all as read: $e');
       }
     }
   }

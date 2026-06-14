@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 
 class BookingSuccessController extends GetxController {
   late String doctorName;
@@ -16,7 +17,8 @@ class BookingSuccessController extends GetxController {
       time = args['time'];
     } else {
       Get.offAllNamed(AppRoutes.patientDashboard); // Go to dashboard if details are missing
-      Get.snackbar('Error', 'Booking success details missing');
+      AppSnackBar.show('Booking success details missing');
+
     }
   }
 

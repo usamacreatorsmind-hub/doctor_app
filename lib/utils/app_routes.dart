@@ -40,4 +40,5 @@ class AppRoutes {
   static const String hospitalProfile      = '/hospital-profile';
   static const String hospitalReports      = '/hospital-reports';
   static const String hospitalJoinRequests = '/hospital-join-requests';
+  static const String hospitalDepartments  = '/hospital-departments';
 }

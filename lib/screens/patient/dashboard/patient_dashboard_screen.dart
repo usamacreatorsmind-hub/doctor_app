@@ -33,21 +33,21 @@ class PatientDashboardScreen extends StatelessWidget {
                       Obx(() {
                         if (controller.upcomingAppointment.value == null)
                           return const SizedBox.shrink();
-                        return _buildUpcomingSection(controller);
+                        return Column(
+                          children: [
+                            const SizedBox(height: 20),
+                            _buildUpcomingSection(controller),
+                          ],
+                        );
                       }),
-                       SizedBox(height:controller.upcomingAppointment.value == null?0: 20),
+                      
+                      const SizedBox(height: 24),
+                      _buildQuickActions(), // PRESCRIPTION BUTTON IS HERE
+                      
+                      const SizedBox(height: 24),
                       _buildSpecializationsSection(controller),
                       const SizedBox(height: 24),
                       _buildTopDoctorsSection(controller),
-                      // const SizedBox(height: 24),
-                      // // Health Summary
-                      // Obx(() {
-                      //   if (controller.bloodGroup.value == 'N/A' ||
-                      //       controller.bloodGroup.value.isEmpty) {
-                      //     return const SizedBox.shrink();
-                      //   }
-                      //   return _buildHealthSummary(controller);
-                      // }),
                     ]),
                   ),
                 ),
@@ -98,6 +98,68 @@ class PatientDashboardScreen extends StatelessWidget {
               _buildSearchBar(controller),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _actionCard(
+                'Prescriptions',
+                Icons.description_rounded,
+                const Color(0xFFE3F2FD),
+                AppColors.primary,
+                () => Get.toNamed(AppRoutes.patientRecords),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _actionCard(
+                'Appointments',
+                Icons.calendar_month_rounded,
+                const Color(0xFFE8F5E9),
+                Colors.green,
+                () => Get.toNamed(AppRoutes.patientAppointments),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _actionCard(String title, IconData icon, Color bg, Color iconColor, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))
+          ],
+          border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          ],
         ),
       ),
     );
@@ -306,41 +368,6 @@ class PatientDashboardScreen extends StatelessWidget {
                 )).toList(),
           );
         }),
-      ],
-    );
-  }
-
-  Widget _buildHealthSummary(PatientDashboardController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Health Summary', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5))),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
-                child: const Icon(Icons.water_drop_outlined, color: Colors.red, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Blood Group',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  Text(controller.bloodGroup.value,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

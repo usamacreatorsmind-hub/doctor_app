@@ -13,6 +13,7 @@ class UserModel {
   final String? hospitalId; // hospital_admin + doctor ke liye
   final String? doctorId; // doctor ke liye
   final String? patientId; // patient ke liye
+  final String? fcmToken; // Push notification token
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -26,6 +27,7 @@ class UserModel {
     this.hospitalId,
     this.doctorId,
     this.patientId,
+    this.fcmToken,
     required this.createdAt,
     this.updatedAt,
   });
@@ -56,6 +58,7 @@ class UserModel {
       hospitalId: map['hospitalId'] as String?,
       doctorId: map['doctorId'] as String?,
       patientId: map['patientId'] as String?,
+      fcmToken: map['fcmToken'] as String?,
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
     );
@@ -63,7 +66,7 @@ class UserModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid, // 'userId' ki jagah 'uid' (Consistency)
+      'uid': uid, 
       'name': name,
       'mobile': mobile,
       'email': email,
@@ -72,8 +75,9 @@ class UserModel {
       'hospitalId': hospitalId,
       'doctorId': doctorId,
       'patientId': patientId,
-      'createdAt': createdAt, // Model ki existing value use karein
-      'updatedAt': FieldValue.serverTimestamp(), // Update ke waqt server time
+      'fcmToken': fcmToken,
+      'createdAt': createdAt, 
+      'updatedAt': FieldValue.serverTimestamp(), 
     };
   }
 
@@ -87,6 +91,7 @@ class UserModel {
     String? hospitalId,
     String? doctorId,
     String? patientId,
+    String? fcmToken,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -98,6 +103,7 @@ class UserModel {
       hospitalId: hospitalId ?? this.hospitalId,
       doctorId: doctorId ?? this.doctorId,
       patientId: patientId ?? this.patientId,
+      fcmToken: fcmToken ?? this.fcmToken,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

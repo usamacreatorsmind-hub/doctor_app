@@ -60,6 +60,8 @@ import '../screens/hospital/reports/hospital_reports_binding.dart';
 import '../screens/hospital/reports/hospital_reports_screen.dart';
 import '../screens/hospital/join_requests/join_requests_binding.dart';
 import '../screens/hospital/join_requests/join_requests_screen.dart';
+import '../screens/hospital/departments/hospital_departments_binding.dart';
+import '../screens/hospital/departments/hospital_departments_screen.dart';
 import '../screens/notifications/notifications_binding.dart';
 import '../screens/notifications/notifications_screen.dart';
 import 'app_routes.dart';
@@ -191,11 +193,6 @@ class AppPages {
       page: () => const HospitalDashboardScreen(),
       binding: HospitalDashboardBinding(),
     ),
-    // GetPage(
-    //   name: AppRoutes.addDoctor,
-    //   page: () => const AddDoctorScreen(),
-    //   binding: AddDoctorBinding(),
-    // ),
     GetPage(
       name: AppRoutes.hospitalProfile,
       page: () => const HospitalProfileScreen(),
@@ -215,6 +212,11 @@ class AppPages {
       name: AppRoutes.hospitalJoinRequests,
       page: () => const JoinRequestsScreen(),
       binding: JoinRequestsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.hospitalDepartments,
+      page: () => const HospitalDepartmentsScreen(),
+      binding: HospitalDepartmentsBinding(),
     ),
     GetPage(
       name: AppRoutes.notifications,

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/appointment_model.dart';
+import '../../../utils/helper.dart';
 
 class PatientAppointmentsController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -63,7 +64,7 @@ class PatientAppointmentsController extends GetxController {
       upcomingAppointments.assignAll(upcoming);
       pastAppointments.assignAll(past);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load appointments: $e');
+      AppSnackBar.show('Failed to load appointments: $e');
     } finally {
       isLoading.value = false;
       update();
@@ -74,9 +75,9 @@ class PatientAppointmentsController extends GetxController {
     try {
       await _firestoreService.updateAppointmentStatus(appointmentId, 'Cancelled');
       await loadAppointments();
-      Get.snackbar('Success', 'Appointment cancelled successfully');
+      AppSnackBar.show('Appointment cancelled successfully');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to cancel: $e');
+      AppSnackBar.show('Failed to cancel: $e');
     }
   }
 

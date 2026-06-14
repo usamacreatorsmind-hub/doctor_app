@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../Repository/auth_repository.dart';
 import '../../utils/app_routes.dart';
+import '../../utils/helper.dart';
 import '../Login/login_controller.dart' show LoginRole;
 
 enum Gender { male, female, other }
@@ -76,12 +77,7 @@ class RegisterController extends GetxController {
         verificationFailed: (FirebaseAuthException e) {
           isLoading.value = false;
           update();
-          Get.snackbar(
-            'Verification Failed',
-            e.message ?? 'Error',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
+          AppSnackBar.show(e.message ?? 'Verification failed');
         },
         codeSent: (String verificationId, int? resendToken) {
           isLoading.value = false;
@@ -108,7 +104,8 @@ class RegisterController extends GetxController {
     } catch (e) {
       isLoading.value = false;
       update();
-      Get.snackbar('Error', 'An error occurred: $e');
+
+      AppSnackBar.show(e.toString());
     }
   }
 

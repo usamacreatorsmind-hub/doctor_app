@@ -39,47 +39,54 @@ class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
 
   Widget _buildDayCard(BuildContext context, String day, DoctorScheduleModel? schedule) {
     bool isAvailable = schedule != null;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(day, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              Obx(() => Switch(
-                value: isAvailable,
-                onChanged: controller.isReadOnly.value ? null : (val) {
-                  if (val) {
-                    _showEditDialog(context, day, schedule);
-                  } else {
-                    if (schedule != null) {
-                      _showDeleteConfirmation(day, schedule.scheduleId);
-                    }
-                  }
-                },
-                activeColor: AppColors.primary,
-              )),
-            ],
-          ),
-          if (isAvailable) ...[
-            const Divider(height: 24),
+    return GestureDetector(
+      onTap: () {
+        if (!controller.isReadOnly.value && isAvailable) {
+          _showEditDialog(context, day, schedule);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+        ),
+        child: Column(
+          children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _infoChip(Icons.access_time_rounded, '${schedule.startTime} - ${schedule.endTime}'),
-                const SizedBox(width: 8),
-                _infoChip(Icons.timer_outlined, '${schedule.slotDurationMins} min/slot'),
+                Text(day, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Switch(
+                  value: isAvailable,
+                  onChanged: controller.isReadOnly.value ? null : (val) {
+                    if (val) {
+                      _showEditDialog(context, day, schedule);
+                    } else {
+                      if (schedule != null) {
+                        _showDeleteConfirmation(day, schedule.scheduleId);
+                      }
+                    }
+                  },
+                  activeColor: AppColors.primary,
+                ),
               ],
             ),
-          ] else
-            const Text(
-                'Not available', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        ],
+            if (isAvailable) ...[
+              const Divider(height: 24),
+              Row(
+                children: [
+                  _infoChip(Icons.access_time_rounded, '${schedule.startTime} - ${schedule.endTime}'),
+                  const SizedBox(width: 8),
+                  _infoChip(Icons.timer_outlined, '${schedule.slotDurationMins} min/slot'),
+                ],
+              ),
+            ] else
+              const Text(
+                  'Not available', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          ],
+        ),
       ),
     );
   }
@@ -106,55 +113,67 @@ class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
     int duration = schedule?.slotDurationMins ?? 15;
 
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Set Schedule for $day',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            Row(
+      StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+                color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                    child: _timePickerField(context, 'Start Time', startTime, (val) => startTime = val)),
-                const SizedBox(width: 12),
-                Expanded(child: _timePickerField(context, 'End Time', endTime, (val) => endTime = val)),
+                Text('Set Schedule for $day',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                        child: _timePickerField(context, 'Start Time', startTime, (val) {
+                          setModalState(() => startTime = val);
+                        })),
+                    const SizedBox(width: 12),
+                    Expanded(child: _timePickerField(context, 'End Time', endTime, (val) {
+                      setModalState(() => endTime = val);
+                    })),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text('Slot Duration (Minutes)', style: TextStyle(fontWeight: FontWeight.w500)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: duration,
+                  items: [15, 20, 30, 45, 60].map((e) =>
+                      DropdownMenuItem(value: e, child: Text('$e mins'))).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setModalState(() => duration = val);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    filled: true, fillColor: AppColors.bgPage,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      controller.updateSchedule(day, startTime, endTime, duration);
+                      Get.back();
+                    },
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                    child: const Text('Save Schedule'),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Text('Slot Duration (Minutes)', style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<int>(
-              value: duration,
-              items: [15, 20, 30, 45, 60].map((e) =>
-                  DropdownMenuItem(value: e, child: Text('$e mins'))).toList(),
-              onChanged: (val) => duration = val!,
-              decoration: InputDecoration(
-                filled: true, fillColor: AppColors.bgPage,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  controller.updateSchedule(day, startTime, endTime, duration);
-                  Get.back();
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                child: const Text('Save Schedule'),
-              ),
-            ),
-          ],
-        ),
+          );
+        }
       ),
     );
   }
@@ -167,7 +186,7 @@ class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
         textCancel: "No",
         confirmTextColor: Colors.white,
         onConfirm: () {
-          // Add delete logic in controller if needed
+          controller.removeSchedule(id);
           Get.back();
         }
     );
@@ -181,10 +200,13 @@ class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
         const SizedBox(height: 6),
         InkWell(
           onTap: () async {
-            final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+            final timeParts = initialValue.split(':');
+            final time = await showTimePicker(
+              context: context, 
+              initialTime: TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]))
+            );
             if (time != null) {
-              onSelected("${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(
-                  2, '0')}");
+              onSelected("${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}");
             }
           },
           child: Container(

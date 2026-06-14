@@ -15,7 +15,7 @@ class PrescriptionModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
-  // Display only
+  // Display only / Stored for snapshotting
   final String? doctorName;
   final String? specialization;
 
@@ -49,6 +49,14 @@ class PrescriptionModel {
   }
 
   factory PrescriptionModel.fromMap(Map<String, dynamic> map, String id) {
+    // Handle specialization as String or List
+    String? spec;
+    if (map['specialization'] is List) {
+      spec = (map['specialization'] as List).join(', ');
+    } else {
+      spec = map['specialization']?.toString();
+    }
+
     return PrescriptionModel(
       prescriptionId: id,
       appointmentId: map['appointmentId'] ?? '',
@@ -63,7 +71,7 @@ class PrescriptionModel {
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
       doctorName: map['doctorName'],
-      specialization: map['specialization'],
+      specialization: spec,
     );
   }
 
@@ -78,6 +86,8 @@ class PrescriptionModel {
       'followUpDate': followUpDate,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
+      'doctorName': doctorName,
+      'specialization': specialization,
     };
   }
 

@@ -100,7 +100,8 @@ class HospitalProfileController extends GetxController {
       }
     } catch (e) {
       debugPrint("Error loading hospital data: $e");
-      Get.snackbar('Error', 'Failed to load hospital data');
+      AppSnackBar.show('Failed to load hospital data');
+
     } finally {
       isLoading.value = false;
       update();
