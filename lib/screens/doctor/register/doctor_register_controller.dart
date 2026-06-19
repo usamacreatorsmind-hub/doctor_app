@@ -32,7 +32,7 @@ class DoctorRegisterController extends GetxController {
   final selectedHospitalIds = <String>[].obs;
 
   final selectedGender = 'male'.obs;
-  final selectedConsultationMode = 'Both'.obs;
+  final selectedConsultationMode = 'Offline'.obs; // Default to Offline
 
   // Master Data Lists (Fetched from Firestore)
   final hospitals = <HospitalModel>[].obs;

@@ -46,7 +46,7 @@ class DoctorSelfProfileController extends GetxController {
   final selectedLanguages = <String>[].obs;
 
   final selectedGender = 'male'.obs;
-  final selectedConsultationMode = 'Both'.obs;
+  final selectedConsultationMode = 'Offline'.obs; // Only Offline supported
 
   final pickedImage = Rxn<File>();
 

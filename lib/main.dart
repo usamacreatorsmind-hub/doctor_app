@@ -1,4 +1,3 @@
-
 import 'package:doctor_app/utils/app_pages.dart' show AppPages;
 import 'package:doctor_app/utils/app_routes.dart' show AppRoutes;
 import 'package:doctor_app/utils/initial_binding.dart';

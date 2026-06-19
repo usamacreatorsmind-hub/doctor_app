@@ -28,10 +28,7 @@ class ProfileSetupScreen extends StatelessWidget {
                     }
                     return AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
-                      child: KeyedSubtree(
-                        key: ValueKey(controller.currentStep.value),
-                        child: _buildStepContent(context, controller),
-                      ),
+                      child: KeyedSubtree(key: ValueKey(controller.currentStep.value), child: _buildStepContent(context, controller)),
                     );
                   }),
                 ),
@@ -52,10 +49,7 @@ class ProfileSetupScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,14 +65,8 @@ class ProfileSetupScreen extends StatelessWidget {
                 onTap: () => controller.onSkip(),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Skip for now',
-                    style: TextStyle(fontSize: 11, color: Colors.white70),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(20)),
+                  child: const Text('Skip for now', style: TextStyle(fontSize: 11, color: Colors.white70)),
                 ),
               ),
             ],
@@ -116,20 +104,11 @@ class ProfileSetupScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         controller.steps[index]['title']!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isActive ? Colors.white : Colors.white60,
-                        ),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isActive ? Colors.white : Colors.white60),
                       ),
                     ),
                     if (index < controller.steps.length - 1)
-                      Expanded(
-                        child: Container(
-                          height: 1.5,
-                          color: isDone ? Colors.white : Colors.white.withOpacity(0.25),
-                        ),
-                      ),
+                      Expanded(child: Container(height: 1.5, color: isDone ? Colors.white : Colors.white.withOpacity(0.25))),
                   ],
                 ),
               );
@@ -201,20 +180,14 @@ class ProfileSetupScreen extends StatelessWidget {
                 disabledBackgroundColor: AppColors.primaryBorder,
               ),
               child: controller.isSaving.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                    )
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(controller.nextBtnLabel, style: AppTextStyles.btnPrimary),
                         const SizedBox(width: 6),
                         Icon(
-                          controller.currentStep.value == controller.steps.length - 1
-                              ? Icons.check_rounded
-                              : Icons.arrow_forward_rounded,
+                          controller.currentStep.value == controller.steps.length - 1 ? Icons.check_rounded : Icons.arrow_forward_rounded,
                           size: 18,
                         ),
                       ],
@@ -393,10 +366,7 @@ class _Step1Personal extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primarySurface : AppColors.bgWhite,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.primaryBorder,
-                          width: isSelected ? 1.8 : 1,
-                        ),
+                        border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder, width: isSelected ? 1.8 : 1),
                       ),
                       child: Column(
                         children: [
@@ -451,17 +421,11 @@ class _Step1Personal extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : AppColors.bgWhite,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.primaryBorder,
-                    ),
+                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
                   ),
                   child: Text(
                     bg,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isSelected ? Colors.white : AppColors.textSecondary),
                   ),
                 ),
               );
@@ -500,10 +464,7 @@ class _Step2Medical extends StatelessWidget {
                     runSpacing: 8,
                     children: controller.commonDiseases.map((disease) {
                       final bool isSelected = controller.medicalHistoryList.contains(disease);
-                      return GestureDetector(
-                        onTap: () => controller.toggleMedicalHistory(disease),
-                        child: _chip(disease, isSelected),
-                      );
+                      return GestureDetector(onTap: () => controller.toggleMedicalHistory(disease), child: _chip(disease, isSelected));
                     }).toList(),
                   ),
                 ),
@@ -522,12 +483,7 @@ class _Step2Medical extends StatelessWidget {
                             runSpacing: 6,
                             children: controller.medicalHistoryList
                                 .where((d) => !controller.commonDiseases.contains(d))
-                                .map(
-                                  (item) => _removableChip(
-                                    item,
-                                    () => controller.removeMedicalHistory(item),
-                                  ),
-                                )
+                                .map((item) => _removableChip(item, () => controller.removeMedicalHistory(item)))
                                 .toList(),
                           ),
                         )
@@ -555,9 +511,7 @@ class _Step2Medical extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: controller.currentMedications
-                        .map(
-                          (item) => _removableChip(item, () => controller.removeMedication(item)),
-                        )
+                        .map((item) => _removableChip(item, () => controller.removeMedication(item)))
                         .toList(),
                   ),
                 ),
@@ -580,12 +534,7 @@ class _Step2Medical extends StatelessWidget {
                       final bool isSelected = controller.allergiesList.contains(allergy);
                       return GestureDetector(
                         onTap: () => controller.toggleAllergy(allergy),
-                        child: _chip(
-                          allergy,
-                          isSelected,
-                          activeColor: const Color(0xFFFF6F00),
-                          activeBg: const Color(0xFFFFF3E0),
-                        ),
+                        child: _chip(allergy, isSelected, activeColor: const Color(0xFFFF6F00), activeBg: const Color(0xFFFFF3E0)),
                       );
                     }).toList(),
                   ),
@@ -602,13 +551,7 @@ class _Step2Medical extends StatelessWidget {
                     runSpacing: 6,
                     children: controller.allergiesList
                         .where((a) => !controller.commonAllergies.contains(a))
-                        .map(
-                          (item) => _removableChip(
-                            item,
-                            () => controller.removeAllergy(item),
-                            color: const Color(0xFFFF6F00),
-                          ),
-                        )
+                        .map((item) => _removableChip(item, () => controller.removeAllergy(item), color: const Color(0xFFFF6F00)))
                         .toList(),
                   ),
                 ),
@@ -754,10 +697,7 @@ Widget _sectionCard({
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primarySurface,
-                borderRadius: BorderRadius.circular(10),
-              ),
+              decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(10)),
               child: Icon(icon, size: 20, color: AppColors.primary),
             ),
             const SizedBox(width: 10),
@@ -769,36 +709,22 @@ Widget _sectionCard({
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       ),
                       if (isOptional) ...[
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                          decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(10)),
                           child: const Text(
                             'Optional',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF2E7D32),
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: TextStyle(fontSize: 10, color: Color(0xFF2E7D32), fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
                     ],
                   ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
+                  Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ),
             ),
@@ -838,22 +764,13 @@ Widget _buildInputField({
         inputFormatters: inputFormatters,
         validator: validator,
         style: _inputStyle,
-        decoration: _inputDeco(
-          hint,
-          icon,
-          prefix: prefix,
-          counterText: maxLength != null ? '' : null,
-        ),
+        decoration: _inputDeco(hint, icon, prefix: prefix, counterText: maxLength != null ? '' : null),
       ),
     ],
   );
 }
 
-Widget _addItemRow({
-  required TextEditingController controller,
-  required String hint,
-  required VoidCallback onAdd,
-}) {
+Widget _addItemRow({required TextEditingController controller, required String hint, required VoidCallback onAdd}) {
   return Row(
     children: [
       Expanded(
@@ -877,10 +794,7 @@ Widget _addItemRow({
         child: Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(10),
-          ),
+          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
           child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
         ),
       ),
@@ -895,10 +809,7 @@ Widget _chip(String label, bool isSelected, {Color? activeColor, Color? activeBg
     decoration: BoxDecoration(
       color: isSelected ? (activeBg ?? AppColors.primarySurface) : AppColors.bgWhite,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: isSelected ? (activeColor ?? AppColors.primary) : AppColors.primaryBorder,
-        width: isSelected ? 1.5 : 1,
-      ),
+      border: Border.all(color: isSelected ? (activeColor ?? AppColors.primary) : AppColors.primaryBorder, width: isSelected ? 1.5 : 1),
     ),
     child: Text(
       label,
@@ -939,11 +850,7 @@ Widget _removableChip(String label, VoidCallback onRemove, {Color color = AppCol
 Widget _fieldLabel(String label) {
   return Text(
     label,
-    style: const TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.w500,
-      color: AppColors.textSecondary,
-    ),
+    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
   );
 }
 

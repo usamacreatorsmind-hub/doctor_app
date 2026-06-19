@@ -18,7 +18,7 @@ class BookingConfirmController extends GetxController {
 
   final isLoading = false.obs;
   final hospitalName = ''.obs;
-  final consultationType = 'Offline'.obs;
+  final consultationType = 'Offline'.obs; // Always Offline for now
   final patientSymptoms = ''.obs;
 
   @override
@@ -40,7 +40,6 @@ class BookingConfirmController extends GetxController {
     if (h != null) hospitalName.value = h.hospitalName;
   }
 
-  void selectConsultationType(String type) => consultationType.value = type;
   void updatePatientSymptoms(String s) => patientSymptoms.value = s;
 
   Future<void> confirmBooking() async {
@@ -66,7 +65,6 @@ class BookingConfirmController extends GetxController {
 
       final apptId = await _firestoreService.createAppointment(appt);
 
-      // ✅ Fixed: Added required 'channel' field to NotificationModel
       await _firestoreService.createNotification(
         NotificationModel(
           notificationId: '',

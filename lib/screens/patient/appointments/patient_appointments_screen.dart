@@ -4,6 +4,7 @@ import '../../../utils/app_colors.dart';
 import '../../../models/appointment_model.dart';
 import 'patient_appointments_controller.dart';
 import 'package:intl/intl.dart';
+import 'review_dialog.dart';
 
 class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
   const PatientAppointmentsScreen({super.key});
@@ -15,8 +16,7 @@ class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
-          title: const Text('My Appointments',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          title: const Text('My Appointments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           backgroundColor: Colors.white,
           elevation: 0,
           foregroundColor: AppColors.textPrimary,
@@ -66,6 +66,7 @@ class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
             appointment: appt,
             isPast: isPast,
             onCancel: () => _showCancelDialog(context, appt.appointmentId),
+            onReview: () => _showReviewDialog(context, appt),
           );
         },
       ),
@@ -81,14 +82,9 @@ class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
           const SizedBox(height: 16),
           Text(
             isPast ? 'No past appointments' : 'No upcoming appointments',
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
           ),
-          if (!isPast)
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('Book your first appointment'),
-            ),
+          if (!isPast) TextButton(onPressed: () => Get.back(), child: const Text('Book your first appointment')),
         ],
       ),
     );
@@ -112,37 +108,37 @@ class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
       ),
     );
   }
+
+  void _showReviewDialog(BuildContext context, AppointmentModel appt) async {
+    final result = await Get.dialog(ReviewDialog(appointment: appt));
+    if (result == true) {
+      controller.loadAppointments();
+    }
+  }
 }
 
 class _AppointmentCard extends StatelessWidget {
   final AppointmentModel appointment;
   final bool isPast;
   final VoidCallback onCancel;
+  final VoidCallback onReview;
 
-  const _AppointmentCard({
-    required this.appointment,
-    required this.isPast,
-    required this.onCancel,
-  });
+  const _AppointmentCard({required this.appointment, required this.isPast, required this.onCancel, required this.onReview});
 
   @override
   Widget build(BuildContext context) {
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final bool isMissed = isPast && 
-                         appointment.appointmentDate.compareTo(todayStr) < 0 && 
-                         (appointment.status == 'Pending' || appointment.status == 'Confirmed');
+    final bool isMissed =
+        isPast &&
+        appointment.appointmentDate.compareTo(todayStr) < 0 &&
+        (appointment.status == 'Pending' || appointment.status == 'Confirmed');
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,8 +148,7 @@ class _AppointmentCard extends StatelessWidget {
               Container(
                 width: 50,
                 height: 50,
-                decoration: BoxDecoration(
-                    color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.medical_services_rounded, color: AppColors.primary),
               ),
               const SizedBox(width: 12),
@@ -161,10 +156,8 @@ class _AppointmentCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(appointment.doctorName ?? 'Doctor',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text(appointment.specialization ?? 'Specialist',
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(appointment.doctorName ?? 'Doctor', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(appointment.specialization ?? 'Specialist', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
@@ -177,7 +170,7 @@ class _AppointmentCard extends StatelessWidget {
             children: [
               _infoItem(Icons.calendar_today_rounded, appointment.appointmentDate),
               _infoItem(Icons.access_time_rounded, appointment.timeSlot),
-              _infoItem(Icons.videocam_outlined, appointment.consultationType),
+              _infoItem(Icons.location_on_rounded, appointment.consultationType),
             ],
           ),
           if (!isPast && (appointment.status == 'Pending' || appointment.status == 'Confirmed')) ...[
@@ -192,6 +185,22 @@ class _AppointmentCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text('Cancel Appointment'),
+              ),
+            ),
+          ],
+          if (isPast && appointment.status == 'Completed' && !appointment.isReviewed) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onReview,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                child: const Text('Rate & Review Doctor'),
               ),
             ),
           ],
@@ -213,7 +222,7 @@ class _AppointmentCard extends StatelessWidget {
   Widget _statusBadge(String status) {
     Color bg = Colors.grey.shade100;
     Color text = Colors.grey;
-    
+
     if (status == 'Confirmed') {
       bg = Colors.green.shade50;
       text = Colors.green;
@@ -234,8 +243,10 @@ class _AppointmentCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-      child: Text(status,
-          style: TextStyle(color: text, fontSize: 11, fontWeight: FontWeight.bold)),
+      child: Text(
+        status,
+        style: TextStyle(color: text, fontSize: 11, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

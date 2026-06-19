@@ -248,7 +248,7 @@ class FirestoreService {
           final specMatch = d.specialization.any((s) => s.toLowerCase().contains(term));
           final symMatch = d.symptomsCovered.any((s) => s.toLowerCase().contains(term));
           final disMatch = d.diseasesCovered.any((dis) => dis.toLowerCase().contains(term));
-          return nameMatch || specMatch || symMatch || disMatch;
+          return nameMatch || specMatch || symMatch || d.doctorName.toLowerCase().contains(term);
         }).toList();
       }
 
@@ -584,6 +584,53 @@ class FirestoreService {
   Future<String> createPayment(PaymentModel payment) async {
     final doc = await _payments.add(payment.toMap());
     return doc.id;
+  }
+
+  // ════════════════════════════════════════
+  // REVIEWS & RATINGS
+  // ════════════════════════════════════════
+
+  Future<void> submitReview(ReviewModel review) async {
+    final batch = _db.batch();
+
+    // 1. Add review document
+    final reviewRef = _reviews.doc();
+    batch.set(reviewRef, review.toMap());
+
+    // 2. Get current doctor data to update rating
+    final doctorDoc = await _doctors.doc(review.doctorId).get();
+    if (doctorDoc.exists) {
+      final data = doctorDoc.data() as Map<String, dynamic>;
+      final double currentRating = (data['rating'] ?? 0.0).toDouble();
+      final int totalReviews = (data['totalReviews'] ?? 0).toInt();
+
+      // Calculate new average rating
+      final double newRating = ((currentRating * totalReviews) + review.rating) / (totalReviews + 1);
+
+      batch.update(_doctors.doc(review.doctorId), {
+        'rating': double.parse(newRating.toStringAsFixed(1)),
+        'totalReviews': totalReviews + 1,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // 3. Mark appointment as reviewed (optional but good practice)
+    batch.update(_appointments.doc(review.appointmentId), {'isReviewed': true});
+
+    await batch.commit();
+  }
+
+  Future<List<ReviewModel>> getDoctorReviews(String doctorId) async {
+    final snap = await _reviews
+        .where('doctorId', isEqualTo: doctorId)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snap.docs.map((d) => ReviewModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+  }
+
+  Future<bool> hasPatientReviewed(String appointmentId) async {
+    final snap = await _reviews.where('appointmentId', isEqualTo: appointmentId).limit(1).get();
+    return snap.docs.isNotEmpty;
   }
 
   // ════════════════════════════════════════

@@ -17,6 +17,7 @@ class AppointmentModel {
   final String? transactionId;
   final double fee;
   final String? notes;
+  final bool isReviewed;         // Added to track if review is done
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -40,6 +41,7 @@ class AppointmentModel {
     this.transactionId,
     required this.fee,
     this.notes,
+    this.isReviewed = false,
     required this.createdAt,
     this.updatedAt,
     this.doctorName,
@@ -77,6 +79,7 @@ class AppointmentModel {
       transactionId: map['transactionId'],
       fee: (map['fee'] ?? 0).toDouble(),
       notes: map['notes'],
+      isReviewed: map['isReviewed'] ?? false,
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
       doctorName: map['doctorName'],
@@ -100,6 +103,7 @@ class AppointmentModel {
       'transactionId': transactionId,
       'fee': fee,
       'notes': notes,
+      'isReviewed': isReviewed,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -110,6 +114,7 @@ class AppointmentModel {
     String? paymentStatus,
     String? transactionId,
     String? notes,
+    bool? isReviewed,
     String? doctorName,
     String? specialization,
     String? hospitalName,
@@ -129,6 +134,7 @@ class AppointmentModel {
       transactionId: transactionId ?? this.transactionId,
       fee: fee,
       notes: notes ?? this.notes,
+      isReviewed: isReviewed ?? this.isReviewed,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       doctorName: doctorName ?? this.doctorName,

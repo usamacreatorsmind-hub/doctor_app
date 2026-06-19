@@ -30,7 +30,7 @@ class PatientAppointmentsController extends GetxController {
     try {
       final results = await _firestoreService.getPatientAppointments(user.uid);
       final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      
+
       // Fetch details for all appointments in parallel for better performance
       final enhancedAppts = await Future.wait(results.map((appt) async {
         final doctor = await _firestoreService.getDoctor(appt.doctorId);

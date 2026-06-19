@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import 'doctor_profile_controller.dart';
+import 'package:intl/intl.dart';
 
 class DoctorProfileScreen extends GetView<DoctorProfileController> {
   const DoctorProfileScreen({super.key});
@@ -45,24 +46,8 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                       children: controller.doctor.languagesKnown.map((l) => _chip(l)).toList(),
                     ),
                   ],
-                  if (controller.doctor.diseasesCovered.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Diseases Treated'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: controller.doctor.diseasesCovered.map((d) => _chip(d)).toList(),
-                    ),
-                  ],
-                  if (controller.doctor.symptomsCovered.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Symptoms Treated'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: controller.doctor.symptomsCovered.map((s) => _chip(s)).toList(),
-                    ),
-                  ],
+                  const SizedBox(height: 24),
+                  _buildReviewsSection(),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -102,7 +87,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                 children: [
                   Text(controller.doctor.doctorName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 4),
-                  Text('${controller.doctor.qualification} - ${controller.doctor.specialization.join(", ")}', 
+                  Text('${controller.doctor.qualification.join(", ")} - ${controller.doctor.specialization.join(", ")}', 
                     style: const TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w500)),
                 ],
               ),
@@ -162,6 +147,90 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
       label: Text(label, style: const TextStyle(fontSize: 11)),
       backgroundColor: Colors.white,
       side: const BorderSide(color: AppColors.primaryBorder),
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle('Patient Reviews'),
+            Obx(() => Text(
+              '${controller.reviews.length} reviews',
+              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+            )),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Obx(() {
+          if (controller.isReviewsLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.reviews.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+              ),
+              child: const Center(
+                child: Text('No reviews yet. Be the first to rate!', 
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              ),
+            );
+          }
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: controller.reviews.length > 3 ? 3 : controller.reviews.length, // Show top 3
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final review = controller.reviews[index];
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(review.patientName ?? 'Patient', 
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                            Text(review.rating.toString(), 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('MMM dd, yyyy').format(review.createdAt),
+                      style: const TextStyle(color: AppColors.textHint, fontSize: 11),
+                    ),
+                    if (review.comment != null && review.comment!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(review.comment!, 
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4)),
+                    ],
+                  ],
+                ),
+              );
+            },
+          );
+        }),
+      ],
     );
   }
 

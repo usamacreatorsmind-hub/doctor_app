@@ -107,7 +107,7 @@ class DoctorModel {
       photoUrl: map['photoUrl'] ?? map['photo'],
       symptomsCovered: List<String>.from(map['symptomsCovered'] ?? []),
       diseasesCovered: List<String>.from(map['diseasesCovered'] ?? []),
-      consultationMode: map['consultationMode'] ?? 'Both',
+      consultationMode: map['consultationMode'] ?? 'Offline',
       rating: double.tryParse(map['rating']?.toString() ?? '0.0') ?? 0.0,
       totalReviews: int.tryParse(map['totalReviews']?.toString() ?? '0') ?? 0,
       status: (map['status']?.toString() ?? 'active').toLowerCase(),

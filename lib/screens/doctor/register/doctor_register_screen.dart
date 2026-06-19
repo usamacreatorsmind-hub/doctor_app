@@ -110,8 +110,6 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 14),
-                        _buildModeSelector(),
                         const SizedBox(height: 20),
 
                         _buildChipSection(
@@ -476,48 +474,6 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildModeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Consultation Mode',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Obx(() => Row(
-          children: ['Both', 'Online', 'Offline'].map((m) {
-            final isSelected = controller.selectedConsultationMode.value == m;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => controller.selectMode(m),
-                child: Container(
-                  margin: EdgeInsets.only(right: m == 'Offline' ? 0 : 8),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
-                  ),
-                  child: Center(
-                    child: Text(
-                      m,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        )),
-      ],
     );
   }
 

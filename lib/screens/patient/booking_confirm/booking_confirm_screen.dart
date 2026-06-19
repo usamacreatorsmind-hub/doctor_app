@@ -31,8 +31,6 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
               const SizedBox(height: 20),
               _buildAppointmentDetails(),
               const SizedBox(height: 20),
-              _buildConsultationTypeSelector(),
-              const SizedBox(height: 20),
               _buildSymptomsInput(),
               const SizedBox(height: 100), // Space for bottom button
             ],
@@ -62,11 +60,11 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
             decoration: BoxDecoration(
               color: AppColors.primarySurface,
               borderRadius: BorderRadius.circular(12),
-              image: doctor.photoUrl != null
+              image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty)
                   ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover)
                   : null,
             ),
-            child: doctor.photoUrl == null
+            child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty)
                 ? const Icon(Icons.person, color: AppColors.primary, size: 35)
                 : null,
           ),
@@ -76,7 +74,7 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(doctor.doctorName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                Text('${doctor.qualification} - ${doctor.specialization}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Text('${doctor.qualification.join(', ')} - ${doctor.specialization.join(', ')}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                 Obx(() => Text(controller.hospitalName.value, style: const TextStyle(fontSize: 12, color: AppColors.textHint))), // Hospital Name
               ],
             ),
@@ -106,6 +104,8 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
           _detailRow(Icons.access_time_rounded, 'Time', controller.selectedTimeSlot),
           const SizedBox(height: 10),
           _detailRow(Icons.payments_rounded, 'Fee', '₹${controller.doctor.consultationFee.toInt()}'),
+          const SizedBox(height: 10),
+          _detailRow(Icons.location_on_rounded, 'Type', 'Offline (In-Clinic)'),
         ],
       ),
     );
@@ -120,48 +120,6 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
         const Spacer(),
         Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 13)),
       ],
-    );
-  }
-
-  Widget _buildConsultationTypeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Consultation Type', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        const SizedBox(height: 12),
-        Obx(() => Row(
-          children: [
-            Expanded(
-              child: _typeCard('Offline', Icons.person_pin_circle_rounded, controller.consultationType.value == 'Offline'),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _typeCard('Online', Icons.videocam_rounded, controller.consultationType.value == 'Online'),
-            ),
-          ],
-        )),
-      ],
-    );
-  }
-
-  Widget _typeCard(String type, IconData icon, bool isSelected) {
-    return GestureDetector(
-      onTap: () => controller.selectConsultationType(type),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primarySurface : AppColors.bgWhite,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder, width: isSelected ? 1.5 : 1),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: isSelected ? AppColors.primary : AppColors.textSecondary),
-            const SizedBox(height: 8),
-            Text(type, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
     );
   }
 

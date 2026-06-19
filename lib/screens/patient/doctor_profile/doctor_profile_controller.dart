@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../../models/doctor_model.dart';
+import '../../../models/review_model.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
 
@@ -10,6 +11,10 @@ class DoctorProfileController extends GetxController {
   final isLoading = false.obs;
   final hospitalName = ''.obs;
   final isAdminView = false.obs;
+  
+  // Reviews List
+  final reviews = <ReviewModel>[].obs;
+  final isReviewsLoading = false.obs;
 
   @override
   void onInit() {
@@ -18,10 +23,21 @@ class DoctorProfileController extends GetxController {
     if (args != null && args['doctor'] != null) {
       doctor = args['doctor'];
       isAdminView.value = args['isAdmin'] ?? false;
-      _loadHospitalDetails();
+      _loadInitialData();
     } else {
       Get.back();
     }
+  }
+
+  Future<void> _loadInitialData() async {
+    isLoading.value = true;
+    update();
+    await Future.wait([
+      _loadHospitalDetails(),
+      _loadReviews(),
+    ]);
+    isLoading.value = false;
+    update();
   }
 
   Future<void> _loadHospitalDetails() async {
@@ -35,12 +51,39 @@ class DoctorProfileController extends GetxController {
     }
   }
 
+  Future<void> _loadReviews() async {
+    isReviewsLoading.value = true;
+    try {
+      final fetchedReviews = await _firestoreService.getDoctorReviews(doctor.doctorId);
+      
+      // Enhance reviews with patient names
+      final enhancedReviews = await Future.wait(fetchedReviews.map((r) async {
+        final patient = await _firestoreService.getUser(r.patientId);
+        return ReviewModel(
+          reviewId: r.reviewId,
+          doctorId: r.doctorId,
+          patientId: r.patientId,
+          appointmentId: r.appointmentId,
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.createdAt,
+          patientName: patient?.name ?? 'Patient',
+        );
+      }));
+      
+      reviews.assignAll(enhancedReviews);
+    } catch (e) {
+      print("Error loading reviews: $e");
+    } finally {
+      isReviewsLoading.value = false;
+    }
+  }
+
   void onBookAppointment() {
     Get.toNamed(AppRoutes.slotSelection, arguments: {'doctor': doctor});
   }
 
   void onViewSchedule() {
-    // Navigate to a read-only schedule view for admin
     Get.toNamed(AppRoutes.doctorSchedule, arguments: {
       'doctorId': doctor.doctorId,
       'isReadOnly': true
