@@ -23,10 +23,7 @@ class OtpController extends GetxController {
 
   String? name, email, password, dob, gender, bloodGroup;
 
-  final List<TextEditingController> otpControllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
+  final List<TextEditingController> otpControllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> focusNodes = List.generate(6, (_) => FocusNode());
 
   final RxInt timerSeconds = 30.obs;
@@ -106,23 +103,16 @@ class OtpController extends GetxController {
     update();
 
     try {
-      final phoneAuthCredential = PhoneAuthProvider.credential(
-        verificationId: verificationId!,
-        smsCode: enteredOtp.value,
-      );
+      final phoneAuthCredential = PhoneAuthProvider.credential(verificationId: verificationId!, smsCode: enteredOtp.value);
 
       if (isForgotPassword) {
         // Sign in with Phone to allow password update
-        final userCredential = await FirebaseAuth.instance.signInWithCredential(
-          phoneAuthCredential,
-        );
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
         if (userCredential.user != null) {
           Get.offNamed(AppRoutes.resetPassword);
         }
       } else if (isLogin) {
-        final userCredential = await FirebaseAuth.instance.signInWithCredential(
-          phoneAuthCredential,
-        );
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
         if (userCredential.user != null) {
           await NotificationService.to.updateToken();
           UserModel? userData = await _firestoreService.getUser(userCredential.user!.uid);
@@ -134,16 +124,13 @@ class OtpController extends GetxController {
         }
       } else {
         // Registration Flow
-        final emailCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email!,
-          password: password!,
-        );
+        final emailCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email!, password: password!);
 
         if (emailCredential.user != null) {
           try {
             await emailCredential.user!.linkWithCredential(phoneAuthCredential);
           } catch (e) {
-            debugPrint("Phone linking failed: $e");
+            debugPrint("Phone linking failed : $e");
           }
 
           UserModel newUser = UserModel(
@@ -151,9 +138,7 @@ class OtpController extends GetxController {
             name: name!,
             email: email!,
             mobile: mobileNumber,
-            role: role.name == 'patient'
-                ? 'patient'
-                : (role.name == 'doctor' ? 'doctor' : 'hospital_admin'),
+            role: role.name == 'patient' ? 'patient' : (role.name == 'doctor' ? 'doctor' : 'hospital_admin'),
             status: 'active',
             createdAt: DateTime.now(),
           );
@@ -207,8 +192,7 @@ class OtpController extends GetxController {
       await _authRepository.verifyPhoneNumber(
         mobileNumber,
         verificationCompleted: (PhoneAuthCredential credential) {},
-        verificationFailed: (FirebaseAuthException e) =>
-            AppSnackBar.show(e.message ?? 'Verification failed'),
+        verificationFailed: (FirebaseAuthException e) => AppSnackBar.show(e.message ?? 'Verification failed'),
 
         codeSent: (String vId, int? resendToken) {
           verificationId = vId;
