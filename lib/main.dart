@@ -11,24 +11,18 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
+      const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
     );
-
     runApp(const DoctorAppointmentApp());
   } catch (e) {
-    debugPrint("Initialization error: $e");
     runApp(const DoctorAppointmentApp());
   }
 }
+
+
 
 class DoctorAppointmentApp extends StatelessWidget {
   const DoctorAppointmentApp({super.key});

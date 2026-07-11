@@ -9,53 +9,56 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgPage,
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDoctorBasicInfo(),
-                  const SizedBox(height: 24),
-                  _buildStats(),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle('Biography'),
-                  const SizedBox(height: 8),
-                  Text(
-                    controller.doctor.biography ?? 'No biography available.',
-                    style: const TextStyle(color: AppColors.textSecondary, height: 1.6),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle('Specialization'),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: controller.doctor.specialization.map((s) => _chip(s)).toList(),
-                  ),
-                  if (controller.doctor.languagesKnown.isNotEmpty) ...[
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        backgroundColor: AppColors.bgPage,
+        body: CustomScrollView(
+          slivers: [
+            _buildAppBar(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDoctorBasicInfo(),
                     const SizedBox(height: 24),
-                    _buildSectionTitle('Languages Known'),
+                    _buildStats(),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Biography'),
+                    const SizedBox(height: 8),
+                    Text(
+                      controller.doctor.biography ?? 'No biography available.',
+                      style: const TextStyle(color: AppColors.textSecondary, height: 1.6),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Specialization'),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      children: controller.doctor.languagesKnown.map((l) => _chip(l)).toList(),
+                      children: controller.doctor.specialization.map((s) => _chip(s)).toList(),
                     ),
+                    if (controller.doctor.languagesKnown.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Languages Known'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: controller.doctor.languagesKnown.map((l) => _chip(l)).toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _buildReviewsSection(),
+                    const SizedBox(height: 100),
                   ],
-                  const SizedBox(height: 24),
-                  _buildReviewsSection(),
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+        bottomSheet: _buildBottomAction(),
       ),
-      bottomSheet: _buildBottomAction(),
     );
   }
 

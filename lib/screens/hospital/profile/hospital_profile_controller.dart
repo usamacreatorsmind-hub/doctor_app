@@ -10,6 +10,7 @@ import '../../../Repository/auth_repository.dart';
 import '../../../models/hospital_model.dart';
 import '../../../utils/helper.dart';
 import '../../../utils/app_routes.dart';
+import '../../role_selection/role_selection_controller.dart';
 
 class HospitalProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -84,11 +85,7 @@ class HospitalProfileController extends GetxController {
 
       // 2. Fallback: Search by adminUserId directly (Seed script support)
       if (myHospital == null) {
-        final snap = await FirebaseFirestore.instance
-            .collection('hospitals')
-            .where('adminUserId', isEqualTo: user.uid)
-            .limit(1)
-            .get();
+        final snap = await FirebaseFirestore.instance.collection('hospitals').where('adminUserId', isEqualTo: user.uid).limit(1).get();
         if (snap.docs.isNotEmpty) {
           myHospital = HospitalModel.fromMap(snap.docs.first.data(), snap.docs.first.id);
         }
@@ -101,7 +98,6 @@ class HospitalProfileController extends GetxController {
     } catch (e) {
       debugPrint("Error loading hospital data: $e");
       AppSnackBar.show('Failed to load hospital data');
-
     } finally {
       isLoading.value = false;
       update();
@@ -239,8 +235,7 @@ class HospitalProfileController extends GetxController {
       await _firestoreService.updateHospital(hId, updatedHospital.toMap());
       hospital.value = updatedHospital;
 
-      ScaffoldMessenger.of(Get.context!).showSnackBar(
-          const SnackBar(content: Text("Profile Updated Successfully")));
+      ScaffoldMessenger.of(Get.context!).showSnackBar(const SnackBar(content: Text("Profile Updated Successfully")));
 
       Future.delayed(const Duration(seconds: 1), () {
         Get.back();
@@ -260,14 +255,12 @@ class HospitalProfileController extends GetxController {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
               await _authRepository.signOut();
-              Get.offAllNamed(AppRoutes.login);
+              Get.offAllNamed(AppRoutes.roleSelection);
+              Get.toNamed(AppRoutes.login, arguments: {'role': UserRole.hospitalAdmin});
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),

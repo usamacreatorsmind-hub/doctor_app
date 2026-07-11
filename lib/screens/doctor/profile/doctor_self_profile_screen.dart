@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_routes.dart';
 import 'doctor_self_profile_controller.dart';
 
 class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
@@ -10,49 +11,72 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgPage,
-      appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        foregroundColor: Colors.white,
-        actions: [
-          Obx(() => IconButton(
-            icon: Icon(controller.isEditing.value ? Icons.close : Icons.edit_rounded, color: Colors.white),
-            onPressed: controller.toggleEdit,
-          )),
-        ],
-      ),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.doctorProfile.value == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return Stack(
-          children: [
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildProfileHeader(),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: controller.isEditing.value ? _buildEditForm() : _buildProfileDetails(),
-                  ),
-                  const SizedBox(height: 100),
-                ],
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        backgroundColor: AppColors.bgPage,
+        appBar: AppBar(
+          title: const Text('My Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.primary,
+          elevation: 0,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () => Get.toNamed(AppRoutes.notifications)),
+            Obx(
+              () => IconButton(
+                icon: Icon(controller.isEditing.value ? Icons.close : Icons.edit_rounded, color: Colors.white),
+                onPressed: controller.toggleEdit,
               ),
             ),
-            if (controller.isEditing.value)
-              Positioned(
-                bottom: 20,
-                left: 20,
-                right: 20,
-                child: _buildSaveButton(),
-              ),
+            const SizedBox(width: 8),
           ],
-        );
-      }),
+        ),
+        body: Obx(() {
+          if (controller.isLoading.value && controller.doctorProfile.value == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return Stack(
+            children: [
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildProfileHeader(),
+                    if (controller.doctorProfile.value?.doctorId.isEmpty ?? false)
+                      Container(
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Colors.orange),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Your professional profile is incomplete. Please edit to add qualifications and specializations.',
+                                style: TextStyle(fontSize: 12, color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: controller.isEditing.value ? _buildEditForm() : _buildProfileDetails(),
+                    ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+              if (controller.isEditing.value) Positioned(bottom: 20, left: 20, right: 20, child: _buildSaveButton()),
+            ],
+          );
+        }),
+      ),
     );
   }
 
@@ -68,44 +92,43 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Obx(() => Stack(
-            children: [
-              CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.white24,
-                backgroundImage: controller.pickedImage.value != null
-                    ? FileImage(controller.pickedImage.value!) as ImageProvider
-                    : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
-                    ? NetworkImage(profile.photoUrl!)
-                    : null,
-                child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
-                    ? const Icon(Icons.person, color: Colors.white, size: 55)
-                    : null,
-              ),
-              if (controller.isEditing.value)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: controller.pickImage,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary, size: 20),
+          Obx(
+            () => Stack(
+              children: [
+                CircleAvatar(
+                  radius: 55,
+                  backgroundColor: Colors.white24,
+                  backgroundImage: controller.pickedImage.value != null
+                      ? FileImage(controller.pickedImage.value!) as ImageProvider
+                      : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
+                      ? NetworkImage(profile.photoUrl!)
+                      : null,
+                  child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
+                      ? const Icon(Icons.person, color: Colors.white, size: 55)
+                      : null,
+                ),
+                if (controller.isEditing.value)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: controller.pickImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary, size: 20),
+                      ),
                     ),
                   ),
-                ),
-            ],
-          )),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           Text(
             profile?.doctorName ?? 'Doctor Name',
             style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          Text(
-            profile?.specialization.join(', ') ?? 'Specialization',
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
+          Text(profile?.specialization.join(', ') ?? 'Specialization', style: const TextStyle(color: Colors.white70, fontSize: 14)),
         ],
       ),
     );
@@ -123,12 +146,12 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
         _infoTile(Icons.currency_rupee_rounded, 'Consultation Fee', '₹${profile.consultationFee}'),
         _infoTile(Icons.phone_android_rounded, 'Mobile', profile.mobileNumber),
         _infoTile(Icons.email_outlined, 'Email', profile.email),
-
+        if (profile.practiceType == 'clinic')
+          _infoTile(Icons.home_work_outlined, 'My Clinic', profile.clinicName ?? 'N/A')
+        else
+          _buildHospitalViewChips('Associated Hospitals', profile.hospitalIds),
         const SizedBox(height: 20),
         _buildViewChips('Specializations', profile.specialization, AppColors.primary),
-        const SizedBox(height: 20),
-        _buildHospitalViewChips('Associated Hospitals', profile.hospitalIds),
-
         const SizedBox(height: 20),
         _buildViewChips('Languages Known', profile.languagesKnown, Colors.teal),
 
@@ -183,11 +206,15 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: filteredItems.map((i) => Chip(
-            label: Text(i, style: const TextStyle(fontSize: 11, color: Colors.white)),
-            backgroundColor: color.withOpacity(0.8),
-            side: BorderSide.none,
-          )).toList(),
+          children: filteredItems
+              .map(
+                (i) => Chip(
+                  label: Text(i, style: const TextStyle(fontSize: 11, color: Colors.white)),
+                  backgroundColor: color.withOpacity(0.8),
+                  side: BorderSide.none,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -211,15 +238,27 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
 
         Row(
           children: [
-            Expanded(child: _buildTextField('Experience (Years)', controller.experienceController, Icons.work_history_outlined, keyboardType: TextInputType.number)),
+            Expanded(
+              child: _buildTextField(
+                'Experience (Years)',
+                controller.experienceController,
+                Icons.work_history_outlined,
+                keyboardType: TextInputType.number,
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildTextField('Fee (₹)', controller.feeController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number)),
+            Expanded(
+              child: _buildTextField('Fee (₹)', controller.feeController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number),
+            ),
           ],
         ),
         _buildTextField('Mobile Number', controller.mobileController, Icons.phone_android_rounded, keyboardType: TextInputType.phone),
 
         const SizedBox(height: 12),
-        _buildHospitalSelection(),
+        if (controller.doctorProfile.value?.practiceType == 'clinic')
+          _buildTextField('Clinic Name', controller.clinicNameController, Icons.local_pharmacy_outlined)
+        else
+          _buildHospitalSelection(),
         const SizedBox(height: 20),
 
         _buildChipSection(
@@ -277,9 +316,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
             return const Text('No hospitals found', style: TextStyle(fontSize: 12, color: AppColors.textSecondary));
           }
 
-          final unselected = controller.hospitals
-              .where((h) => !controller.selectedHospitalIds.contains(h.hospitalId))
-              .toList();
+          final unselected = controller.hospitals.where((h) => !controller.selectedHospitalIds.contains(h.hospitalId)).toList();
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,13 +367,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     );
   }
 
-  Widget _buildChipSection(
-      String title,
-      RxList<String> availableList,
-      RxList<String> selectedList,
-      Color activeColor,
-      IconData icon,
-      ) {
+  Widget _buildChipSection(String title, RxList<String> availableList, RxList<String> selectedList, Color activeColor, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -421,11 +452,20 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController ctrl, IconData icon, {TextInputType keyboardType = TextInputType.text, int maxLines = 1}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController ctrl,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: ctrl,

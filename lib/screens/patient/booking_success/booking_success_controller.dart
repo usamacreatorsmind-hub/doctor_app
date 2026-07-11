@@ -4,6 +4,7 @@ import '../../../utils/helper.dart';
 
 class BookingSuccessController extends GetxController {
   late String doctorName;
+  late String patientName;
   late String date;
   late String time;
 
@@ -11,8 +12,9 @@ class BookingSuccessController extends GetxController {
   void onInit() {
     super.onInit();
     final args = Get.arguments as Map<String, dynamic>?;
-    if (args != null && args['doctorName'] != null && args['date'] != null && args['time'] != null) {
+    if (args != null && args['doctorName'] != null && args['patientName'] != null && args['date'] != null && args['time'] != null) {
       doctorName = args['doctorName'];
+      patientName = args['patientName'];
       date = args['date'];
       time = args['time'];
     } else {

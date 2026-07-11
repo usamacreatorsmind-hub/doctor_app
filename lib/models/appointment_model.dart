@@ -12,12 +12,14 @@ class AppointmentModel {
   final String timeSlot;
   final String consultationType; // Online | Offline
   final String symptoms;
-  final String status;           // Pending | Confirmed | Cancelled | Completed
-  final String paymentStatus;    // Paid | Unpaid
+  final String status; // Pending | Confirmed | Cancelled | Completed
+  final String paymentStatus; // Paid | Unpaid
   final String? transactionId;
   final double fee;
   final String? notes;
-  final bool isReviewed;         // Added to track if review is done
+  final bool isReviewed; // Added to track if review is done
+  final bool isForSelf;
+  final Map<String, dynamic>? patientDetails;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -42,6 +44,8 @@ class AppointmentModel {
     required this.fee,
     this.notes,
     this.isReviewed = false,
+    this.isForSelf = true,
+    this.patientDetails,
     required this.createdAt,
     this.updatedAt,
     this.doctorName,
@@ -80,6 +84,8 @@ class AppointmentModel {
       fee: (map['fee'] ?? 0).toDouble(),
       notes: map['notes'],
       isReviewed: map['isReviewed'] ?? false,
+      isForSelf: map['isForSelf'] ?? true,
+      patientDetails: map['patientDetails'],
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
       doctorName: map['doctorName'],
@@ -104,6 +110,8 @@ class AppointmentModel {
       'fee': fee,
       'notes': notes,
       'isReviewed': isReviewed,
+      'isForSelf': isForSelf,
+      'patientDetails': patientDetails,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -115,6 +123,8 @@ class AppointmentModel {
     String? transactionId,
     String? notes,
     bool? isReviewed,
+    bool? isForSelf,
+    Map<String, dynamic>? patientDetails,
     String? doctorName,
     String? specialization,
     String? hospitalName,
@@ -135,6 +145,8 @@ class AppointmentModel {
       fee: fee,
       notes: notes ?? this.notes,
       isReviewed: isReviewed ?? this.isReviewed,
+      isForSelf: isForSelf ?? this.isForSelf,
+      patientDetails: patientDetails ?? this.patientDetails,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       doctorName: doctorName ?? this.doctorName,

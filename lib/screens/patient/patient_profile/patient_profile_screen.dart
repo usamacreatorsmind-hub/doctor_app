@@ -12,15 +12,20 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        backgroundColor: Colors.white,
+        title: const Text('My Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.primary,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => Get.toNamed(AppRoutes.notifications),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
             onPressed: controller.goToEditProfile,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Obx(() {
@@ -74,20 +79,21 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
               ]),
 
               const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: controller.logout,
-                  icon: const Icon(Icons.logout_rounded, color: Colors.red),
-                  label: const Text('Logout', style: TextStyle(color: Colors.red)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: controller.logout,
+                    icon: const Icon(Icons.logout_rounded, color: Colors.red),
+                    label: const Text('Logout', style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
             ],
           ),
         );
@@ -104,7 +110,10 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
           child: Icon(Icons.person, size: 50, color: AppColors.primary),
         ),
         const SizedBox(height: 16),
-        Text(user.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        Text(
+          user.name,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+        ),
         Text('Patient ID: ${user.uid.substring(0, 8).toUpperCase()}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
       ],
     );
@@ -152,7 +161,10 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+          ),
           const Divider(height: 24),
           ...children,
         ],
@@ -184,7 +196,10 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Medical History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+          const Text(
+            'Medical History',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+          ),
           const Divider(height: 24),
           if (history.isEmpty)
             const Text('No medical history added', style: TextStyle(color: AppColors.textHint, fontSize: 12))
@@ -192,11 +207,15 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: history.map<Widget>((item) => Chip(
-                label: Text(item, style: const TextStyle(fontSize: 12)),
-                backgroundColor: AppColors.bgPage,
-                side: BorderSide.none,
-              )).toList(),
+              children: history
+                  .map<Widget>(
+                    (item) => Chip(
+                      label: Text(item, style: const TextStyle(fontSize: 12)),
+                      backgroundColor: AppColors.bgPage,
+                      side: BorderSide.none,
+                    ),
+                  )
+                  .toList(),
             ),
         ],
       ),

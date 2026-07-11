@@ -62,6 +62,14 @@ import '../screens/hospital/join_requests/join_requests_binding.dart';
 import '../screens/hospital/join_requests/join_requests_screen.dart';
 import '../screens/hospital/departments/hospital_departments_binding.dart';
 import '../screens/hospital/departments/hospital_departments_screen.dart';
+import '../screens/hospital/add_receptionist/add_receptionist_binding.dart';
+import '../screens/hospital/add_receptionist/add_receptionist_screen.dart';
+import '../screens/receptionist/dashboard/receptionist_dashboard_binding.dart';
+import '../screens/receptionist/dashboard/receptionist_dashboard_screen.dart';
+import '../screens/receptionist/appointments/receptionist_appointments_binding.dart';
+import '../screens/receptionist/appointments/receptionist_appointments_screen.dart';
+import '../screens/receptionist/walk_in_booking/walk_in_booking_binding.dart';
+import '../screens/receptionist/walk_in_booking/walk_in_booking_screen.dart';
 import '../screens/notifications/notifications_binding.dart';
 import '../screens/notifications/notifications_screen.dart';
 import 'app_routes.dart';
@@ -194,6 +202,11 @@ class AppPages {
       binding: HospitalDashboardBinding(),
     ),
     GetPage(
+      name: AppRoutes.addDoctor,
+      page: () => const AddDoctorScreen(),
+      binding: AddDoctorBinding(),
+    ),
+    GetPage(
       name: AppRoutes.hospitalProfile,
       page: () => const HospitalProfileScreen(),
       binding: HospitalProfileBinding(),
@@ -217,6 +230,26 @@ class AppPages {
       name: AppRoutes.hospitalDepartments,
       page: () => const HospitalDepartmentsScreen(),
       binding: HospitalDepartmentsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.addReceptionist,
+      page: () => const AddReceptionistScreen(),
+      binding: AddReceptionistBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.receptionistDashboard,
+      page: () => const ReceptionistDashboardScreen(),
+      binding: ReceptionistDashboardBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.receptionistAppointments,
+      page: () => const ReceptionistAppointmentsScreen(),
+      binding: ReceptionistAppointmentsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.walkInBooking,
+      page: () => const WalkInBookingScreen(),
+      binding: WalkInBookingBinding(),
     ),
     GetPage(
       name: AppRoutes.notifications,

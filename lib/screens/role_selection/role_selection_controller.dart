@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../utils/app_routes.dart' show AppRoutes;
 import '../../utils/helper.dart';
 
-enum UserRole { hospitalAdmin, doctor, patient }
+enum UserRole { hospitalAdmin, doctor, patient, receptionist }
 
 class RoleSelectionController extends GetxController {
   final selectedRole = Rxn<UserRole>();

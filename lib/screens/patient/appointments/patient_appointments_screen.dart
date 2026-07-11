@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../models/appointment_model.dart';
+import '../../../utils/app_routes.dart';
 import 'patient_appointments_controller.dart';
 import 'package:intl/intl.dart';
 import 'review_dialog.dart';
@@ -16,14 +17,18 @@ class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
-          title: const Text('My Appointments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-          backgroundColor: Colors.white,
+          title: const Text('My Appointments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.primary,
           elevation: 0,
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () => Get.toNamed(AppRoutes.notifications)),
+            const SizedBox(width: 8),
+          ],
           bottom: const TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppColors.primary,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
             indicatorWeight: 3,
             tabs: [
               Tab(text: 'Upcoming'),
@@ -158,6 +163,13 @@ class _AppointmentCard extends StatelessWidget {
                   children: [
                     Text(appointment.doctorName ?? 'Doctor', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     Text(appointment.specialization ?? 'Specialist', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(
+                      appointment.isForSelf
+                          ? 'For: Self'
+                          : 'For: ${appointment.patientDetails?['name'] ?? 'Someone'} (${appointment.patientDetails?['relationship'] ?? 'Other'})',
+                      style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../models/doctor_schedule_model.dart';
+import '../../../utils/app_routes.dart';
 import 'doctor_schedule_controller.dart';
 
 class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
@@ -13,25 +14,34 @@ class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         title: Obx(() => Text(
-            controller.isReadOnly.value ? 'Doctor Schedule' : 'Manage Schedule', 
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600))),
-        backgroundColor: Colors.white,
+            controller.isReadOnly.value ? 'Doctor Schedule' : 'Manage Schedule',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+        backgroundColor: AppColors.primary,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => Get.toNamed(AppRoutes.notifications),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: controller.weekDays.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final day = controller.weekDays[index];
-            final schedule = controller.schedules.firstWhereOrNull((s) => s.day == day);
-            return _buildDayCard(context, day, schedule);
-          },
+        return SafeArea(
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: controller.weekDays.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final day = controller.weekDays[index];
+              final schedule = controller.schedules.firstWhereOrNull((s) => s.day == day);
+              return _buildDayCard(context, day, schedule);
+            },
+          ),
         );
       }),
     );

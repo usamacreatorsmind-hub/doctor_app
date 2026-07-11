@@ -8,6 +8,7 @@ import '../../models/user_model.dart';
 import '../../models/patient_profile_model.dart';
 import '../../utils/app_routes.dart';
 import '../../utils/helper.dart';
+import '../../services/notification_service.dart';
 import '../Login/login_controller.dart' show LoginRole;
 
 class OtpController extends GetxController {
@@ -123,6 +124,7 @@ class OtpController extends GetxController {
           phoneAuthCredential,
         );
         if (userCredential.user != null) {
+          await NotificationService.to.updateToken();
           UserModel? userData = await _firestoreService.getUser(userCredential.user!.uid);
           if (userData != null) {
             _navigateAfterVerification(userData.role);
@@ -157,6 +159,7 @@ class OtpController extends GetxController {
           );
 
           await _firestoreService.createUser(newUser);
+          await NotificationService.to.updateToken();
 
           if (role == LoginRole.patient) {
             PatientProfileModel profile = PatientProfileModel(

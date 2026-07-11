@@ -8,8 +8,10 @@ import '../../../Repository/FirestoreService.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/appointment_model.dart';
 import '../../../models/notification_model.dart';
+import '../../../models/user_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
+import '../../role_selection/role_selection_controller.dart';
 
 class DoctorDashboardController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -21,9 +23,24 @@ class DoctorDashboardController extends GetxController {
   final isLoading = false.obs;
   final isAppointmentsLoading = false.obs;
   final isLoadMore = false.obs;
+  final currentIndex = 0.obs;
   
   final doctorProfile = Rxn<DoctorModel>();
   final appointments = <AppointmentModel>[].obs;
+  final receptionists = <UserModel>[].obs;
+  final allPatients = <UserModel>[].obs;
+  final filteredPatients = <UserModel>[].obs;
+  final isPatientsLoading = false.obs;
+  final patientSearchQuery = "".obs;
+
+  // New Home Tab States
+  final isOnline = true.obs;
+  final nextAppointment = Rxn<AppointmentModel>();
+
+  // Stats
+  final confirmedTodayCount = 0.obs;
+  final pendingTodayCount = 0.obs;
+  final totalTodayCount = 0.obs;
   
   // Pagination
   DocumentSnapshot? lastDocument;
@@ -67,7 +84,25 @@ class DoctorDashboardController extends GetxController {
       final profile = await _firestoreService.getDoctorByUid(user.uid);
       if (profile != null) {
         doctorProfile.value = profile;
-        await loadAppointments(selectedDate.value);
+        
+        // Robust Hospital ID Fallback
+        if (doctorProfile.value!.hospitalId.isEmpty) {
+          final userModel = await _firestoreService.getUser(user.uid);
+          if (userModel?.hospitalId != null && userModel!.hospitalId!.isNotEmpty) {
+            doctorProfile.value = doctorProfile.value!.copyWith(hospitalId: userModel.hospitalId);
+          } else {
+            // Check if they are a hospital admin directly
+            final hospital = await _firestoreService.getHospitalByAdminUid(user.uid);
+            if (hospital != null) {
+              doctorProfile.value = doctorProfile.value!.copyWith(hospitalId: hospital.hospitalId);
+            }
+          }
+        }
+
+        await Future.wait([
+          loadAppointments(selectedDate.value),
+          loadReceptionists(),
+        ]);
       } else {
         AppSnackBar.show('Doctor profile not found in database.');
       }
@@ -106,8 +141,12 @@ class DoctorDashboardController extends GetxController {
       for (var appt in results) {
         try {
           final patientData = await _firestoreService.getUser(appt.patientId);
+          String patientName = patientData?.name ?? 'Patient';
+          if (!appt.isForSelf && appt.patientDetails != null && appt.patientDetails!['name'] != null) {
+            patientName = appt.patientDetails!['name'];
+          }
           enhancedAppts.add(appt.copyWith(
-            patientName: patientData?.name ?? 'Patient',
+            patientName: patientName,
           ));
         } catch (e) {
           enhancedAppts.add(appt.copyWith(patientName: 'Patient'));
@@ -115,6 +154,7 @@ class DoctorDashboardController extends GetxController {
       }
       
       appointments.assignAll(enhancedAppts);
+      _updateStats();
     } catch (e) {
       AppSnackBar.show('Failed to load appointments: $e');
     } finally {
@@ -145,8 +185,12 @@ class DoctorDashboardController extends GetxController {
       for (var appt in results) {
         try {
           final patientData = await _firestoreService.getUser(appt.patientId);
+          String patientName = patientData?.name ?? 'Patient';
+          if (!appt.isForSelf && appt.patientDetails != null && appt.patientDetails!['name'] != null) {
+            patientName = appt.patientDetails!['name'];
+          }
           enhancedAppts.add(appt.copyWith(
-            patientName: patientData?.name ?? 'Patient',
+            patientName: patientName,
           ));
         } catch (e) {
           enhancedAppts.add(appt.copyWith(patientName: 'Patient'));
@@ -187,7 +231,120 @@ class DoctorDashboardController extends GetxController {
     }
   }
 
-  Future<void> onRefresh() async => await loadDashboardData();
+  void _updateStats() {
+    totalTodayCount.value = appointments.length;
+    confirmedTodayCount.value = appointments.where((a) => a.status == 'Confirmed').length;
+    pendingTodayCount.value = appointments.where((a) => a.status == 'Pending').length;
+
+    // Find next appointment for Home Tab
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    if (selectedDate.value == today) {
+      nextAppointment.value = appointments.firstWhereOrNull(
+        (a) => a.status == 'Confirmed' || a.status == 'Arrived'
+      );
+    } else {
+      nextAppointment.value = null;
+    }
+  }
+
+  Future<void> loadReceptionists() async {
+    if (doctorProfile.value == null) return;
+    try {
+      final list = await _firestoreService.getReceptionistsByDoctor(doctorProfile.value!.doctorId);
+      receptionists.assignAll(list);
+    } catch (e) {
+      print("Error loading receptionists: $e");
+    }
+  }
+
+  Future<void> removeReceptionist(String uid) async {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Remove Staff'),
+        content: const Text('Are you sure you want to remove this receptionist? They will no longer be able to log in.'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              isLoading.value = true;
+              update();
+              try {
+                await _firestoreService.deleteUser(uid);
+                await loadReceptionists();
+                AppSnackBar.show('Staff removed successfully');
+              } catch (e) {
+                AppSnackBar.show('Error: $e');
+              } finally {
+                isLoading.value = false;
+                update();
+              }
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  void goToAddReceptionist() {
+    final hId = doctorProfile.value?.hospitalId;
+    final dId = doctorProfile.value?.doctorId;
+    if (hId != null && hId.isNotEmpty) {
+      Get.toNamed(AppRoutes.addReceptionist, arguments: {
+        'hospitalId': hId,
+        'doctorId': dId,
+      });
+    } else {
+      AppSnackBar.show('Hospital/Clinic ID not found in your profile.');
+    }
+  }
+
+  void changeTab(int index) {
+    currentIndex.value = index;
+    if (index == 2) {
+      loadAllPatients();
+    }
+  }
+
+  Future<void> loadAllPatients() async {
+    if (doctorProfile.value == null) return;
+    isPatientsLoading.value = true;
+    update();
+    try {
+      final allAppts = await _firestoreService.getDoctorAppointments(doctorProfile.value!.doctorId);
+      final patientIds = allAppts.map((a) => a.patientId).toSet().toList();
+      
+      List<UserModel> patients = [];
+      for (String pid in patientIds) {
+        final p = await _firestoreService.getUser(pid);
+        if (p != null) patients.add(p);
+      }
+      
+      allPatients.assignAll(patients);
+      filteredPatients.assignAll(patients);
+    } catch (e) {
+      print("Error loading patients: $e");
+    } finally {
+      isPatientsLoading.value = false;
+      update();
+    }
+  }
+
+  void onPatientSearch(String query) {
+    patientSearchQuery.value = query;
+    if (query.isEmpty) {
+      filteredPatients.assignAll(allPatients);
+    } else {
+      filteredPatients.assignAll(allPatients.where((p) => p.name.toLowerCase().contains(query.toLowerCase())).toList());
+    }
+  }
+
+  Future<void> onRefresh() async {
+    if (currentIndex.value == 0 || currentIndex.value == 1) await loadDashboardData();
+    if (currentIndex.value == 2) await loadAllPatients();
+  }
 
   Future<void> logout() async {
     Get.dialog(
@@ -202,7 +359,8 @@ class DoctorDashboardController extends GetxController {
           TextButton(
             onPressed: () async {
               await _authRepository.signOut();
-              Get.offAllNamed(AppRoutes.login);
+              Get.offAllNamed(AppRoutes.roleSelection);
+              Get.toNamed(AppRoutes.login, arguments: {'role': UserRole.doctor});
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),

@@ -14,6 +14,7 @@ class RoleSelectionScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: AppColors.bgPage,
           body: SafeArea(
+            top: false,
             child: Column(
               children: [
                 // ── Blue Header ──
@@ -54,6 +55,16 @@ class RoleSelectionScreen extends StatelessWidget {
                           title: 'Patient',
                           subtitle: 'Book appointments & view records',
                         ),
+                        const SizedBox(height: 14),
+                        _buildRoleCard(
+                          controller: controller,
+                          role: UserRole.receptionist,
+                          icon: Icons.support_agent_rounded,
+                          iconBgColor: AppColors.receptionistBg,
+                          iconColor: AppColors.receptionistIcon,
+                          title: 'Receptionist',
+                          subtitle: 'Manage walk-ins & front desk',
+                        ),
                       ],
                     ),
                   ),
@@ -72,28 +83,18 @@ class RoleSelectionScreen extends StatelessWidget {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 80, 24, 32),
       decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
       ),
       child: Column(
         children: [
           Container(
             width: 70,
             height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.18),
-            ),
-            child: const Icon(
-              Icons.favorite_rounded,
-              size: 34,
-              color: Colors.white,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.18)),
+            child: const Icon(Icons.favorite_rounded, size: 34, color: Colors.white),
           ),
           const SizedBox(height: 18),
           const Text('Who are you?', style: AppTextStyles.heading2),
@@ -124,10 +125,7 @@ class RoleSelectionScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primarySurface : AppColors.bgWhite,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.primaryBorder,
-            width: isSelected ? 1.8 : 0.8,
-          ),
+          border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder, width: isSelected ? 1.8 : 0.8),
         ),
         child: Row(
           children: [
@@ -135,10 +133,7 @@ class RoleSelectionScreen extends StatelessWidget {
             Container(
               width: 52,
               height: 52,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(14),
-              ),
+              decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: iconColor, size: 28),
             ),
             const SizedBox(width: 16),
@@ -163,16 +158,9 @@ class RoleSelectionScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isSelected ? AppColors.primary : Colors.transparent,
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.primaryBorder,
-                  width: 1.5,
-                ),
+                border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder, width: 1.5),
               ),
-              child: isSelected
-                  ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
-                  : null,
+              child: isSelected ? const Icon(Icons.check_rounded, size: 15, color: Colors.white) : null,
             ),
           ],
         ),
@@ -181,34 +169,32 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 
   Widget _buildFooter(RoleSelectionController controller) {
-    final bool hasSelection = controller.selectedRole.value != null;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-      child: SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: controller.onContinue,
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                hasSelection ? AppColors.primary : AppColors.primaryBorder,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+    return Obx(() {
+      final bool hasSelection = controller.selectedRole.value != null;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: hasSelection ? controller.onContinue : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: hasSelection ? AppColors.primary : AppColors.primaryBorder,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Continue', style: AppTextStyles.btnPrimary),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded, size: 20),
+              ],
             ),
           ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Continue', style: AppTextStyles.btnPrimary),
-              SizedBox(width: 8),
-              Icon(Icons.arrow_forward_rounded, size: 20),
-            ],
-          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

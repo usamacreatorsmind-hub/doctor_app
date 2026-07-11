@@ -21,6 +21,17 @@ class BookingConfirmController extends GetxController {
   final consultationType = 'Offline'.obs; // Always Offline for now
   final patientSymptoms = ''.obs;
 
+  // Third Person Booking
+  final isForSelf = true.obs;
+  final otherNameController = TextEditingController();
+  final otherAgeController = TextEditingController();
+  final otherMobileController = TextEditingController();
+  final selectedGender = 'Male'.obs;
+  final selectedRelationship = 'Father'.obs;
+
+  final List<String> genders = ['Male', 'Female', 'Other'];
+  final List<String> relationships = ['Father', 'Mother', 'Spouse', 'Sibling', 'Child', 'Friend', 'Other'];
+
   @override
   void onInit() {
     super.onInit();
@@ -35,6 +46,14 @@ class BookingConfirmController extends GetxController {
     }
   }
 
+  @override
+  void onClose() {
+    otherNameController.dispose();
+    otherAgeController.dispose();
+    otherMobileController.dispose();
+    super.onClose();
+  }
+
   Future<void> _loadHospitalName() async {
     final h = await _firestoreService.getHospital(doctor.hospitalId);
     if (h != null) hospitalName.value = h.hospitalName;
@@ -44,12 +63,27 @@ class BookingConfirmController extends GetxController {
 
   Future<void> confirmBooking() async {
     if (_auth.currentUser == null) return;
+
+    if (!isForSelf.value) {
+      if (otherNameController.text.trim().isEmpty) {
+        AppSnackBar.show('Please enter patient name');
+        return;
+      }
+      if (otherAgeController.text.trim().isEmpty) {
+        AppSnackBar.show('Please enter patient age');
+        return;
+      }
+    }
+
     isLoading.value = true;
     update();
 
     try {
+      final user = await _firestoreService.getUser(_auth.currentUser!.uid);
+      final currentUserName = user?.name ?? 'Patient';
+
       final appt = AppointmentModel(
-        appointmentId: '', 
+        appointmentId: '',
         patientId: _auth.currentUser!.uid,
         doctorId: doctor.doctorId,
         hospitalId: doctor.hospitalId,
@@ -60,8 +94,20 @@ class BookingConfirmController extends GetxController {
         status: 'Pending',
         paymentStatus: 'Unpaid',
         fee: doctor.consultationFee,
+        isForSelf: isForSelf.value,
+        patientDetails: isForSelf.value
+            ? null
+            : {
+                'name': otherNameController.text.trim(),
+                'age': otherAgeController.text.trim(),
+                'gender': selectedGender.value,
+                'relationship': selectedRelationship.value,
+                'mobile': otherMobileController.text.trim(),
+              },
         createdAt: DateTime.now(),
       );
+
+      final patientName = isForSelf.value ? currentUserName : otherNameController.text.trim();
 
       final apptId = await _firestoreService.createAppointment(appt);
 
@@ -81,7 +127,9 @@ class BookingConfirmController extends GetxController {
       Get.offNamed(AppRoutes.payment, arguments: {
         'appointmentId': apptId,
         'amount': doctor.consultationFee,
+        'bookingFee': doctor.bookingFee,
         'doctorName': doctor.doctorName,
+        'patientName': patientName,
         'date': selectedDateStr,
         'time': selectedTimeSlot,
       });

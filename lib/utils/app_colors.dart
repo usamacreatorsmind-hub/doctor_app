@@ -19,6 +19,8 @@ class AppColors {
   static const Color doctorIcon = Color(0xFF2E7D32);
   static const Color patientBg = Color(0xFFFFF3E0);
   static const Color patientIcon = Color(0xFFE65100);
+  static const Color receptionistBg = Color(0xFFF3E5F5);
+  static const Color receptionistIcon = Color(0xFF7B1FA2);
   static const Color textHint = Colors.grey;
 
   static const LinearGradient splashGradient = LinearGradient(

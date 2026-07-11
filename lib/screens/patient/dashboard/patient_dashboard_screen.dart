@@ -40,10 +40,9 @@ class PatientDashboardScreen extends StatelessWidget {
                           ],
                         );
                       }),
-                      
+
                       const SizedBox(height: 24),
                       _buildQuickActions(), // PRESCRIPTION BUTTON IS HERE
-                      
                       const SizedBox(height: 24),
                       _buildSpecializationsSection(controller),
                       const SizedBox(height: 24),
@@ -54,7 +53,7 @@ class PatientDashboardScreen extends StatelessWidget {
               ],
             ),
           )),
-          bottomNavigationBar: _buildBottomNav(controller),
+          bottomNavigationBar: SafeArea(child: _buildBottomNav(controller)),
         );
       },
     );
@@ -429,62 +428,65 @@ class _DoctorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 70, height: 70,
-            decoration: BoxDecoration(
-              color: AppColors.bgPage,
-              borderRadius: BorderRadius.circular(12),
-              image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty) ? DecorationImage(
-                  image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
+    return GestureDetector(
+      onTap: onBook,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 70, height: 70,
+              decoration: BoxDecoration(
+                color: AppColors.bgPage,
+                borderRadius: BorderRadius.circular(12),
+                image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty) ? DecorationImage(
+                    image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
+              ),
+              child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty) ? const Icon(
+                  Icons.person, color: Colors.grey, size: 30) : null,
             ),
-            child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty) ? const Icon(
-                Icons.person, color: Colors.grey, size: 30) : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(doctor.doctorName,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                Text(doctor.specialization.join(', '),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                    Text(doctor.rating.toString(),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.work_history_outlined, size: 14, color: Colors.blue),
-                    const SizedBox(width: 4),
-                    Text('${doctor.experience} yrs',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                  ],
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(doctor.doctorName,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text(doctor.specialization.join(', '),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                      Text(doctor.rating.toString(),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.work_history_outlined, size: 14, color: Colors.blue),
+                      const SizedBox(width: 4),
+                      Text('${doctor.experience} yrs',
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: onBook,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            child: const Text('Book', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: onBook,
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+              child: const Text('Book', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }

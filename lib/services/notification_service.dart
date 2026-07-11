@@ -17,18 +17,14 @@ class NotificationService extends GetxService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
-  Future<NotificationService> init() async {
-    await _setupNotifications();
-    return this;
+  @override
+  void onInit() {
+    super.onInit();
+    _setupNotifications();
   }
 
   Future<void> _setupNotifications() async {
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    NotificationSettings settings = await _messaging.requestPermission(alert: true, badge: true, sound: true, provisional: false);
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('User granted notification permission');
@@ -36,9 +32,7 @@ class NotificationService extends GetxService {
       _messaging.onTokenRefresh.listen((newToken) {
         _saveTokenToFirestore(newToken);
       });
-      const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings(
-        'ic_launcher',
-      );
+      const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('ic_launcher');
 
       const DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -73,6 +67,7 @@ class NotificationService extends GetxService {
   Future<void> updateToken() async {
     try {
       String? token = await _messaging.getToken();
+      debugPrint("FCM Token retrieved: $token");
       if (token != null) {
         await _saveTokenToFirestore(token);
       }
@@ -85,7 +80,9 @@ class NotificationService extends GetxService {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await FirestoreService().updateUser(user.uid, {'fcmToken': token});
-      debugPrint("FCM Token synced to Firestore");
+      debugPrint("FCM Token synced to Firestore for user: ${user.uid}");
+    } else {
+      debugPrint("FCM Token NOT synced: No user logged in");
     }
   }
 

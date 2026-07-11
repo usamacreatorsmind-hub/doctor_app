@@ -44,6 +44,8 @@ class SplashController extends GetxController {
       Get.offAllNamed(AppRoutes.doctorDashboard);
     } else if (user.role == 'hospital_admin') {
       Get.offAllNamed(AppRoutes.hospitalDashboard);
+    } else if (user.role == 'receptionist') {
+      Get.offAllNamed(AppRoutes.receptionistDashboard);
     } else {
       Get.offAllNamed(AppRoutes.roleSelection);
     }

@@ -11,7 +11,7 @@ class DoctorSearchController extends GetxController {
 
   final searchController = TextEditingController();
   final scrollController = ScrollController();
-  
+
   final isLoading = false.obs;
   final isLoadMore = false.obs;
   final searchResults = <DoctorModel>[].obs;
@@ -24,7 +24,11 @@ class DoctorSearchController extends GetxController {
   // Filters
   final selectedSpecialization = ''.obs;
   final specializations = <String>[].obs;
+  final symptoms = <String>[].obs;
+  final diseases = <String>[].obs;
+  final suggestions = <String>[].obs;
   final maxFee = 5000.0.obs;
+  final isSuggestionsVisible = false.obs;
 
   // Debounce query
   final searchQuery = "".obs;
@@ -32,8 +36,8 @@ class DoctorSearchController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadSpecializations();
-    
+    loadMasterData();
+
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null && args['specialization'] != null) {
       selectedSpecialization.value = args['specialization'];
@@ -43,7 +47,7 @@ class DoctorSearchController extends GetxController {
 
     // Debounce search for user typing
     debounce(searchQuery, (_) => searchDoctors(), time: const Duration(milliseconds: 500));
-    
+
     // Scroll listener for pagination
     scrollController.addListener(() {
       if (scrollController.position.pixels >= scrollController.position.maxScrollExtent - 200) {
@@ -54,20 +58,49 @@ class DoctorSearchController extends GetxController {
     searchDoctors();
   }
 
-  Future<void> loadSpecializations() async {
+  Future<void> loadMasterData() async {
     try {
-      final list = await _firestoreService.getSpecializations();
-      specializations.assignAll(list);
+      final specs = await _firestoreService.getSpecializations();
+      final symps = await _firestoreService.getSymptoms();
+      final diss = await _firestoreService.getDiseases();
+
+      specializations.assignAll(specs);
+      symptoms.assignAll(symps);
+      diseases.assignAll(diss);
     } catch (e) {
-      print("Error loading specializations: $e");
+      print("Error loading master data: $e");
     }
   }
 
   void onSearchChanged(String val) {
     searchQuery.value = val;
+    if (val.length >= 2) {
+      final query = val.toLowerCase();
+      final List<String> matches = [];
+
+      // Add matching symptoms
+      matches.addAll(symptoms.where((s) => s.toLowerCase().contains(query)).take(3));
+      // Add matching diseases
+      matches.addAll(diseases.where((d) => d.toLowerCase().contains(query)).take(3));
+      // Add matching specializations
+      matches.addAll(specializations.where((s) => s.toLowerCase().contains(query)).take(2));
+
+      suggestions.assignAll(matches.toSet().toList()); // Unique matches
+      isSuggestionsVisible.value = suggestions.isNotEmpty;
+    } else {
+      isSuggestionsVisible.value = false;
+    }
+  }
+
+  void selectSuggestion(String value) {
+    searchController.text = value;
+    searchQuery.value = value;
+    isSuggestionsVisible.value = false;
+    searchDoctors();
   }
 
   Future<void> searchDoctors() async {
+    isSuggestionsVisible.value = false;
     isLoading.value = true;
     lastDocument = null;
     hasMore.value = true;
@@ -84,7 +117,7 @@ class DoctorSearchController extends GetxController {
       );
 
       final List<DoctorModel> docs = List<DoctorModel>.from(result['docs']);
-      
+
       // In-memory sort fallback for missing composite indexes
       docs.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
 

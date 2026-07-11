@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_routes.dart';
 import 'hospital_profile_controller.dart';
 
 class HospitalProfileScreen extends GetView<HospitalProfileController> {
@@ -12,20 +13,22 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        title: const Text(
-          'Hospital Profile',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.white,
+        title: const Text('Hospital Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.primary,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: Colors.white,
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => Get.toNamed(AppRoutes.notifications),
+          ),
+          IconButton(
             onPressed: controller.logout,
-            icon: const Icon(Icons.logout_rounded, color: Colors.red),
+            icon: const Icon(Icons.logout_rounded),
             tooltip: 'Logout',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Obx(() {

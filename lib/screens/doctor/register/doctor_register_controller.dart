@@ -21,12 +21,16 @@ class DoctorRegisterController extends GetxController {
   final passwordController = TextEditingController();
   final experienceController = TextEditingController();
   final feeController = TextEditingController();
+  final bookingFeeController = TextEditingController(text: '50');
   final bioController = TextEditingController();
+  final clinicNameController = TextEditingController();
 
   // Selections
   final isLoading = false.obs;
   final isMasterLoading = false.obs;
   final isPasswordHidden = true.obs;
+
+  final practiceType = 'hospital'.obs; // 'hospital' or 'clinic'
 
   // Multiple Hospitals Selection
   final selectedHospitalIds = <String>[].obs;
@@ -112,10 +116,17 @@ class DoctorRegisterController extends GetxController {
 
   Future<void> onRegisterPressed() async {
     if (!formKey.currentState!.validate()) return;
-    if (selectedHospitalIds.isEmpty) {
+    
+    if (practiceType.value == 'hospital' && selectedHospitalIds.isEmpty) {
       AppSnackBar.show('Please select at least one hospital');
       return;
     }
+
+    if (practiceType.value == 'clinic' && clinicNameController.text.trim().isEmpty) {
+      AppSnackBar.show('Please enter your clinic name');
+      return;
+    }
+
     if (selectedQualifications.isEmpty) {
       AppSnackBar.show('Please select at least one qualification');
       return;
@@ -138,17 +149,47 @@ class DoctorRegisterController extends GetxController {
       if (userCredential != null && userCredential.user != null) {
         final String uid = userCredential.user!.uid;
 
-        // 2. Create Doctor Profile (Saving qualification & specialization as List)
+        String finalHospitalId = '';
+        List<String> finalHospitalIds = [];
+
+        if (practiceType.value == 'clinic') {
+          // Create a new Hospital record for the individual clinic
+          final clinic = HospitalModel(
+            hospitalId: '',
+            adminUserId: uid,
+            hospitalName: clinicNameController.text.trim(),
+            registrationNo: 'CLINIC-${DateTime.now().millisecondsSinceEpoch}',
+            address: 'To be updated',
+            city: 'To be updated',
+            state: 'To be updated',
+            pincode: '',
+            contactNumber: mobileController.text.trim(),
+            email: emailController.text.trim(),
+            departments: selectedSpecializations.toList(),
+            workingHours: {'open': '09:00 AM', 'close': '08:00 PM'},
+            emergencyAvailable: false,
+            status: 'active',
+            createdAt: DateTime.now(),
+          );
+          finalHospitalId = await _firestoreService.createHospital(clinic);
+          finalHospitalIds = [finalHospitalId];
+        } else {
+          finalHospitalId = selectedHospitalIds.first;
+          finalHospitalIds = selectedHospitalIds.toList();
+        }
+
+        // 2. Create Doctor Profile
         final doctor = DoctorModel(
           doctorId: '',
           uid: uid,
-          hospitalId: selectedHospitalIds.first,
-          hospitalIds: selectedHospitalIds.toList(),
+          hospitalId: finalHospitalId,
+          hospitalIds: finalHospitalIds,
           doctorName: nameController.text.trim(),
           qualification: selectedQualifications.toList(),
           specialization: selectedSpecializations.toList(),
           experience: int.tryParse(experienceController.text) ?? 0,
           consultationFee: double.tryParse(feeController.text) ?? 0.0,
+          bookingFee: double.tryParse(bookingFeeController.text) ?? 50.0,
           mobileNumber: mobileController.text.trim(),
           email: emailController.text.trim(),
           gender: selectedGender.value,
@@ -157,7 +198,9 @@ class DoctorRegisterController extends GetxController {
           symptomsCovered: selectedSymptoms.toList(),
           diseasesCovered: selectedDiseases.toList(),
           consultationMode: selectedConsultationMode.value,
-          status: 'pending',
+          status: practiceType.value == 'clinic' ? 'active' : 'pending',
+          practiceType: practiceType.value,
+          clinicName: practiceType.value == 'clinic' ? clinicNameController.text.trim() : null,
           createdAt: DateTime.now(),
         );
 
@@ -170,28 +213,32 @@ class DoctorRegisterController extends GetxController {
           mobile: mobileController.text.trim(),
           email: emailController.text.trim(),
           role: 'doctor',
-          status: 'pending', // Set to pending until approved
+          status: practiceType.value == 'clinic' ? 'active' : 'pending',
           doctorId: doctorId,
-          hospitalId: selectedHospitalIds.first,
+          hospitalId: finalHospitalId,
           createdAt: DateTime.now(),
         );
 
         await _firestoreService.createUser(userModel);
 
-        // 4. Create Join Requests for each selected hospital
-        for (String hId in selectedHospitalIds) {
-          await _firestoreService.createJoinRequest({
-            'doctorId': doctorId,
-            'doctorUid': uid,
-            'hospitalId': hId,
-            'doctorName': doctor.doctorName,
-            'specialization': doctor.specialization,
-            'doctorEmail': doctor.email,
-            'doctorMobile': doctor.mobileNumber,
-            'status': 'pending',
-          });
-        }
+        // 4. Create Join Requests (Only for Hospital path)
+        if (practiceType.value == 'hospital') {
+          for (String hId in selectedHospitalIds) {
+            await _firestoreService.createJoinRequest({
+              'doctorId': doctorId,
+              'doctorUid': uid,
+              'hospitalId': hId,
+              'doctorName': doctor.doctorName,
+              'specialization': doctor.specialization,
+              'doctorEmail': doctor.email,
+              'doctorMobile': doctor.mobileNumber,
+              'status': 'pending',
+            });
+          }
           AppSnackBar.show('Registration successful! Please wait for admin approval.');
+        } else {
+          AppSnackBar.show('Registration successful! Your clinic profile is ready.');
+        }
 
         Get.offAllNamed(AppRoutes.login);
       }

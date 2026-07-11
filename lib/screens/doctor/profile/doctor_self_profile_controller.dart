@@ -36,6 +36,7 @@ class DoctorSelfProfileController extends GetxController {
   late TextEditingController feeController;
   late TextEditingController bioController;
   late TextEditingController mobileController;
+  late TextEditingController clinicNameController;
 
   // Selected values
   final selectedHospitalIds = <String>[].obs;
@@ -58,6 +59,7 @@ class DoctorSelfProfileController extends GetxController {
     feeController = TextEditingController();
     bioController = TextEditingController();
     mobileController = TextEditingController();
+    clinicNameController = TextEditingController();
     loadInitialData();
   }
 
@@ -68,6 +70,7 @@ class DoctorSelfProfileController extends GetxController {
     feeController.dispose();
     bioController.dispose();
     mobileController.dispose();
+    clinicNameController.dispose();
     super.onClose();
   }
 
@@ -114,13 +117,46 @@ class DoctorSelfProfileController extends GetxController {
     try {
       final user = _auth.currentUser;
       if (user != null) {
+        debugPrint("DoctorProfile: Loading profile for UID: ${user.uid}");
         final profile = await _firestoreService.getDoctorByUid(user.uid);
+
         if (profile != null) {
+          debugPrint("DoctorProfile: Profile found in doctors collection");
           doctorProfile.value = profile;
           _fillControllers(profile);
+        } else {
+          debugPrint("DoctorProfile: Profile NOT found in doctors collection, trying fallback to users");
+          // Fallback to UserModel for basic info
+          final userModel = await _firestoreService.getUser(user.uid);
+          if (userModel != null) {
+            debugPrint("DoctorProfile: User model found, creating skeleton doctor profile");
+            final skeleton = DoctorModel(
+              doctorId: '',
+              uid: userModel.uid,
+              hospitalId: userModel.hospitalId ?? '',
+              hospitalIds: userModel.hospitalId != null ? [userModel.hospitalId!] : [],
+              doctorName: userModel.name,
+              qualification: [],
+              specialization: [],
+              experience: 0,
+              consultationFee: 0.0,
+              mobileNumber: userModel.mobile,
+              email: userModel.email,
+              gender: 'male',
+              languagesKnown: [],
+              status: userModel.status,
+              createdAt: userModel.createdAt,
+              symptomsCovered: [],
+              diseasesCovered: [],
+              consultationMode: 'Offline',
+            );
+            doctorProfile.value = skeleton;
+            _fillControllers(skeleton);
+          }
         }
       }
     } catch (e) {
+      debugPrint("DoctorProfile Error: $e");
       AppSnackBar.show('Failed to load profile: $e');
     }
   }
@@ -131,6 +167,7 @@ class DoctorSelfProfileController extends GetxController {
     feeController.text = profile.consultationFee.toString();
     bioController.text = profile.biography ?? '';
     mobileController.text = profile.mobileNumber;
+    clinicNameController.text = profile.clinicName ?? '';
 
     selectedGender.value = profile.gender;
     selectedConsultationMode.value = profile.consultationMode;
@@ -153,11 +190,7 @@ class DoctorSelfProfileController extends GetxController {
   }
 
   Future<void> pickImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 50,
-      maxWidth: 800,
-    );
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50, maxWidth: 800);
     if (image != null) {
       pickedImage.value = File(image.path);
       update();
@@ -187,14 +220,24 @@ class DoctorSelfProfileController extends GetxController {
     isLoading.value = true;
     update();
     try {
+      final String uid = doctorProfile.value!.uid;
       String? photoUrl = doctorProfile.value?.photoUrl;
+
       if (pickedImage.value != null) {
-        final ref = _storage.ref().child('doctor_profiles').child(doctorProfile.value!.uid).child('profile.jpg');
-        await ref.putFile(pickedImage.value!);
-        photoUrl = await ref.getDownloadURL();
+        debugPrint("DoctorProfile: Uploading image to Storage...");
+        try {
+          final ref = _storage.ref().child('doctor_profiles').child(uid).child('profile.jpg');
+          await ref.putFile(pickedImage.value!);
+          photoUrl = await ref.getDownloadURL();
+        } catch (e) {
+          debugPrint("DoctorProfile Storage Error: $e");
+          // Continue without updating photo if storage fails (maybe not enabled)
+          AppSnackBar.show('Photo upload failed. Please ensure Firebase Storage is enabled.');
+        }
       }
 
       final data = {
+        'uid': uid,
         'doctorName': nameController.text.trim(),
         'qualification': selectedQualifications.toList(),
         'specialization': selectedSpecializations.toList(),
@@ -207,17 +250,29 @@ class DoctorSelfProfileController extends GetxController {
         'consultationMode': selectedConsultationMode.value,
         'hospitalIds': selectedHospitalIds.toList(),
         'hospitalId': selectedHospitalIds.isNotEmpty ? selectedHospitalIds.first : '',
+        'clinicName': clinicNameController.text.trim(),
         'symptomsCovered': selectedSymptoms.toList(),
         'diseasesCovered': selectedDiseases.toList(),
         'photoUrl': photoUrl,
         'photo': photoUrl,
       };
 
-      await _firestoreService.updateDoctor(doctorProfile.value!.doctorId, data);
+      if (doctorProfile.value!.doctorId.isEmpty) {
+        debugPrint("DoctorProfile: Creating new doctor document...");
+        final newId = await _firestoreService.createDoctor(DoctorModel.fromMap(data, ''));
+        // Link to user model
+        await _firestoreService.updateUser(uid, {'doctorId': newId});
+        debugPrint("DoctorProfile: New doctor created with ID: $newId");
+      } else {
+        debugPrint("DoctorProfile: Updating existing doctor document: ${doctorProfile.value!.doctorId}");
+        await _firestoreService.updateDoctor(doctorProfile.value!.doctorId, data);
+      }
+
       await loadProfile();
       isEditing.value = false;
       AppSnackBar.show('Profile updated successfully');
     } catch (e) {
+      debugPrint("DoctorProfile Update Error: $e");
       AppSnackBar.show('Failed to update profile: $e');
     } finally {
       isLoading.value = false;

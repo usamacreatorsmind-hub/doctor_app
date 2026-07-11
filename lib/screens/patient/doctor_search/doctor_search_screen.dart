@@ -17,44 +17,90 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          _buildSearchBar(),
-          _buildSpecializationFilters(),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (controller.searchResults.isEmpty) {
-                return _buildEmptyState();
-              }
-              return ListView.separated(
-                controller: controller.scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.searchResults.length + (controller.hasMore.value ? 1 : 0),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  if (index < controller.searchResults.length) {
-                    return _DoctorResultCard(
-                      doctor: controller.searchResults[index],
-                      onTap: () => controller.goToDoctorProfile(controller.searchResults[index]),
-                    );
+          Column(
+            children: [
+              _buildSearchBar(),
+              const SizedBox(height: 8),
+              _buildSpecializationFilters(),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
                   }
+                  if (controller.searchResults.isEmpty) {
+                    return _buildEmptyState();
+                  }
+                  return SafeArea(
+                    child: ListView.separated(
+                      controller: controller.scrollController,
+                      padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16, top: 10),
+                      itemCount: controller.searchResults.length + (controller.hasMore.value ? 1 : 0),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        if (index < controller.searchResults.length) {
+                          return _DoctorResultCard(
+                            doctor: controller.searchResults[index],
+                            onTap: () => controller.goToDoctorProfile(controller.searchResults[index]),
+                            matchTerm: controller.searchQuery.value,
+                          );
+                        }
 
-                  return controller.hasMore.value
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
-                        )
-                      : const SizedBox.shrink();
-                },
-              );
-            }),
+                        return controller.hasMore.value
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 24),
+                                child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+                              )
+                            : const SizedBox.shrink();
+                      },
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
+          _buildSuggestionsOverlay(),
         ],
       ),
     );
+  }
+
+  Widget _buildSuggestionsOverlay() {
+    return Obx(() {
+      if (!controller.isSuggestionsVisible.value || controller.suggestions.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return Positioned(
+        top: 60, // Below search bar
+        left: 16,
+        right: 16,
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 250),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+            border: Border.all(color: AppColors.primaryBorder),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            itemCount: controller.suggestions.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final suggestion = controller.suggestions[index];
+              return ListTile(
+                leading: const Icon(Icons.history_rounded, size: 20, color: AppColors.textHint),
+                title: Text(suggestion, style: const TextStyle(fontSize: 14)),
+                onTap: () => controller.selectSuggestion(suggestion),
+                dense: true,
+              );
+            },
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildSearchBar() {
@@ -136,10 +182,22 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
 class _DoctorResultCard extends StatelessWidget {
   final DoctorModel doctor;
   final VoidCallback onTap;
-  const _DoctorResultCard({required this.doctor, required this.onTap});
+  final String matchTerm;
+  const _DoctorResultCard({required this.doctor, required this.onTap, this.matchTerm = ''});
 
   @override
   Widget build(BuildContext context) {
+    String? matchedTag;
+    if (matchTerm.isNotEmpty) {
+      final term = matchTerm.toLowerCase();
+      final symMatch = doctor.symptomsCovered.firstWhereOrNull((s) => s.toLowerCase().contains(term));
+      final disMatch = doctor.diseasesCovered.firstWhereOrNull((d) => d.toLowerCase().contains(term));
+      if (symMatch != null)
+        matchedTag = "Treats: $symMatch";
+      else if (disMatch != null)
+        matchedTag = "Specialist: $disMatch";
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -149,54 +207,76 @@ class _DoctorResultCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        child: Row(
+        child: Column(
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.primarySurface,
-                borderRadius: BorderRadius.circular(12),
-                image: doctor.photoUrl != null ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
-              ),
-              child: doctor.photoUrl == null ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 40) : null,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doctor.doctorName,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            Row(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(12),
+                    image: doctor.photoUrl != null ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
                   ),
-                  Text(
-                    doctor.specialization.join(', '),
-                    style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
+                  child: doctor.photoUrl == null ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 40) : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.star_rounded, size: 16, color: Colors.orange),
-                      const SizedBox(width: 4),
-                      Text(doctor.rating.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                      Text(' (${doctor.totalReviews})', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('${doctor.experience} yrs exp', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                       Text(
-                        '₹${doctor.consultationFee.toInt()}',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        doctor.doctorName,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        doctor.specialization.join(', '),
+                        style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.star_rounded, size: 16, color: Colors.orange),
+                          const SizedBox(width: 4),
+                          Text(doctor.rating.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(' (${doctor.totalReviews})', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${doctor.experience} yrs exp', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(
+                            '₹${doctor.consultationFee.toInt()}',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            if (matchedTag != null) ...[
+              const Divider(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      matchedTag,
+                      style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -7,6 +7,7 @@ import '../../../models/user_model.dart';
 import '../../../models/patient_profile_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
+import '../../role_selection/role_selection_controller.dart';
 
 class PatientProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -67,7 +68,8 @@ class PatientProfileController extends GetxController {
           TextButton(
             onPressed: () async {
               await _authRepository.signOut();
-              Get.offAllNamed(AppRoutes.login);
+              Get.offAllNamed(AppRoutes.roleSelection);
+              Get.toNamed(AppRoutes.login, arguments: {'role': UserRole.patient});
             },
             child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),

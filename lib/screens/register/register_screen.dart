@@ -15,6 +15,7 @@ class RegisterScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: AppColors.bgPage,
           body: SafeArea(
+            top: false,
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -108,7 +109,7 @@ class RegisterScreen extends StatelessWidget {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 28),
+      padding: const EdgeInsets.fromLTRB(24, 70, 24, 28),
       decoration: const BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
@@ -116,7 +117,8 @@ class RegisterScreen extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 66, height: 66,
+            width: 66,
+            height: 66,
             decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.18)),
             child: const Icon(Icons.person_add_rounded, size: 32, color: Colors.white),
           ),
@@ -130,12 +132,18 @@ class RegisterScreen extends StatelessWidget {
   }
 
   Widget _sectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary));
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+    );
   }
 
   Widget _buildInputField({
-    required String label, required String hint, required IconData icon,
-    required TextEditingController controller, TextInputType keyboardType = TextInputType.text,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -181,13 +189,17 @@ class RegisterScreen extends StatelessWidget {
       children: [
         Text('Blood Group', style: _labelStyle),
         const SizedBox(height: 6),
-        Obx(() => DropdownButtonFormField<String>(
-          value: controller.selectedBloodGroup.value,
-          style: _inputTextStyle,
-          decoration: _inputDecoration('Select', Icons.water_drop_outlined),
-          items: controller.bloodGroups.map((bg) => DropdownMenuItem<String>(value: bg, child: Text(bg))).toList(),
-          onChanged: (val) { if (val != null) controller.selectBloodGroup(val); },
-        )),
+        Obx(
+          () => DropdownButtonFormField<String>(
+            value: controller.selectedBloodGroup.value,
+            style: _inputTextStyle,
+            decoration: _inputDecoration('Select', Icons.water_drop_outlined),
+            items: controller.bloodGroups.map((bg) => DropdownMenuItem<String>(value: bg, child: Text(bg))).toList(),
+            onChanged: (val) {
+              if (val != null) controller.selectBloodGroup(val);
+            },
+          ),
+        ),
       ],
     );
   }
@@ -198,15 +210,17 @@ class RegisterScreen extends StatelessWidget {
       children: [
         Text('Gender', style: _labelStyle),
         const SizedBox(height: 8),
-        Obx(() => Row(
-          children: [
-            _genderCard(controller, Gender.male, Icons.male_rounded, 'Male'),
-            const SizedBox(width: 10),
-            _genderCard(controller, Gender.female, Icons.female_rounded, 'Female'),
-            const SizedBox(width: 10),
-            _genderCard(controller, Gender.other, Icons.person_outline_rounded, 'Other'),
-          ],
-        )),
+        Obx(
+          () => Row(
+            children: [
+              _genderCard(controller, Gender.male, Icons.male_rounded, 'Male'),
+              const SizedBox(width: 10),
+              _genderCard(controller, Gender.female, Icons.female_rounded, 'Female'),
+              const SizedBox(width: 10),
+              _genderCard(controller, Gender.other, Icons.person_outline_rounded, 'Other'),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -227,7 +241,14 @@ class RegisterScreen extends StatelessWidget {
             children: [
               Icon(icon, size: 22, color: isSelected ? AppColors.primary : AppColors.textSecondary),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isSelected ? AppColors.primary : AppColors.textSecondary)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -264,44 +285,54 @@ class RegisterScreen extends StatelessWidget {
       children: [
         Text('Password', style: _labelStyle),
         const SizedBox(height: 6),
-        Obx(() => TextFormField(
-          controller: controller.passwordController,
-          obscureText: controller.isPasswordHidden.value,
-          validator: controller.validatePassword,
-          style: _inputTextStyle,
-          decoration: _inputDecoration('Create a strong password', Icons.lock_outline_rounded).copyWith(
-            suffixIcon: GestureDetector(
-              onTap: controller.togglePasswordVisibility,
-              child: Icon(controller.isPasswordHidden.value ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.textSecondary, size: 20),
+        Obx(
+          () => TextFormField(
+            controller: controller.passwordController,
+            obscureText: controller.isPasswordHidden.value,
+            validator: controller.validatePassword,
+            style: _inputTextStyle,
+            decoration: _inputDecoration('Create a strong password', Icons.lock_outline_rounded).copyWith(
+              suffixIcon: GestureDetector(
+                onTap: controller.togglePasswordVisibility,
+                child: Icon(
+                  controller.isPasswordHidden.value ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+              ),
             ),
           ),
-        )),
+        ),
       ],
     );
   }
 
   Widget _buildRegisterButton(RegisterController controller) {
-    return Obx(() => SizedBox(
-      width: double.infinity, height: 52,
-      child: ElevatedButton(
-        onPressed: controller.isLoading.value ? null : controller.onRegisterPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          disabledBackgroundColor: AppColors.primaryBorder,
+    return Obx(
+      () => SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: controller.isLoading.value ? null : controller.onRegisterPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            disabledBackgroundColor: AppColors.primaryBorder,
+          ),
+          child: controller.isLoading.value
+              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.how_to_reg_rounded, size: 20),
+                    SizedBox(width: 8),
+                    Text('Register & Send OTP', style: AppTextStyles.btnPrimary),
+                  ],
+                ),
         ),
-        child: controller.isLoading.value
-            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.how_to_reg_rounded, size: 20),
-                  SizedBox(width: 8),
-                  Text('Register & Send OTP', style: AppTextStyles.btnPrimary),
-                ],
-              ),
       ),
-    ));
+    );
   }
 
   TextStyle get _labelStyle => const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary);
@@ -312,11 +343,21 @@ class RegisterScreen extends StatelessWidget {
       hintText: hint,
       hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
       prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-      filled: true, fillColor: AppColors.bgWhite,
+      filled: true,
+      fillColor: AppColors.bgWhite,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder, width: 1.5)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder, width: 1.5)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primaryBorder, width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primaryBorder, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
     );
   }
 }

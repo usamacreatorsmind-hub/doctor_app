@@ -10,6 +10,7 @@ class DoctorModel {
   final List<String> specialization;
   final int experience;
   final double consultationFee;
+  final double bookingFee; // Slot Booking Charge (Paid Online)
   final String mobileNumber;
   final String email;
   final String gender;
@@ -22,6 +23,8 @@ class DoctorModel {
   final double rating;
   final int totalReviews;
   final String status;
+  final String practiceType; // 'hospital' or 'clinic'
+  final String? clinicName;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -35,6 +38,7 @@ class DoctorModel {
     required this.specialization,
     required this.experience,
     required this.consultationFee,
+    this.bookingFee = 50.0,
     required this.mobileNumber,
     required this.email,
     required this.gender,
@@ -47,6 +51,8 @@ class DoctorModel {
     this.rating = 0.0,
     this.totalReviews = 0,
     required this.status,
+    this.practiceType = 'hospital',
+    this.clinicName,
     required this.createdAt,
     this.updatedAt,
   });
@@ -75,42 +81,45 @@ class DoctorModel {
 
     List<String> specs = [];
     if (map['specialization'] is List) {
-      specs = List<String>.from(map['specialization']);
+      specs = (map['specialization'] as List).map((e) => e.toString()).toList();
     } else if (map['specialization'] != null) {
       specs = [map['specialization'].toString()];
     }
 
     List<String> hIds = [];
     if (map['hospitalIds'] is List) {
-      hIds = List<String>.from(map['hospitalIds']);
+      hIds = (map['hospitalIds'] as List).map((e) => e.toString()).toList();
     } else if (map['hospitalId'] != null) {
       hIds = [map['hospitalId'].toString()];
     }
 
-    String primaryHId = map['hospitalId'] ?? (hIds.isNotEmpty ? hIds.first : '');
+    String primaryHId = (map['hospitalId']?.toString()) ?? (hIds.isNotEmpty ? hIds.first : '');
 
     return DoctorModel(
       doctorId: id,
-      uid: map['uid'] ?? map['userId'] ?? '',
+      uid: (map['uid']?.toString()) ?? (map['userId']?.toString()) ?? '',
       hospitalId: primaryHId,
       hospitalIds: hIds,
-      doctorName: map['doctorName'] ?? '',
+      doctorName: map['doctorName']?.toString() ?? '',
       qualification: quals,
       specialization: specs,
       experience: int.tryParse(map['experience']?.toString() ?? '0') ?? 0,
       consultationFee: double.tryParse(map['consultationFee']?.toString() ?? '0.0') ?? 0.0,
-      mobileNumber: map['mobileNumber'] ?? '',
-      email: map['email'] ?? '',
-      gender: map['gender'] ?? '',
-      languagesKnown: List<String>.from(map['languagesKnown'] ?? []),
-      biography: map['biography'],
-      photoUrl: map['photoUrl'] ?? map['photo'],
-      symptomsCovered: List<String>.from(map['symptomsCovered'] ?? []),
-      diseasesCovered: List<String>.from(map['diseasesCovered'] ?? []),
-      consultationMode: map['consultationMode'] ?? 'Offline',
+      bookingFee: double.tryParse(map['bookingFee']?.toString() ?? '50.0') ?? 50.0,
+      mobileNumber: map['mobileNumber']?.toString() ?? '',
+      email: map['email']?.toString() ?? '',
+      gender: map['gender']?.toString() ?? '',
+      languagesKnown: (map['languagesKnown'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      biography: map['biography']?.toString(),
+      photoUrl: (map['photoUrl']?.toString()) ?? (map['photo']?.toString()),
+      symptomsCovered: (map['symptomsCovered'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      diseasesCovered: (map['diseasesCovered'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      consultationMode: map['consultationMode']?.toString() ?? 'Offline',
       rating: double.tryParse(map['rating']?.toString() ?? '0.0') ?? 0.0,
       totalReviews: int.tryParse(map['totalReviews']?.toString() ?? '0') ?? 0,
       status: (map['status']?.toString() ?? 'active').toLowerCase(),
+      practiceType: map['practiceType']?.toString() ?? 'hospital',
+      clinicName: map['clinicName']?.toString(),
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
     );
@@ -127,6 +136,7 @@ class DoctorModel {
       'specialization': specialization,
       'experience': experience,
       'consultationFee': consultationFee,
+      'bookingFee': bookingFee,
       'mobileNumber': mobileNumber,
       'email': email,
       'gender': gender,
@@ -140,6 +150,8 @@ class DoctorModel {
       'rating': rating,
       'totalReviews': totalReviews,
       'status': status,
+      'practiceType': practiceType,
+      'clinicName': clinicName,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -160,6 +172,7 @@ class DoctorModel {
       specialization: specialization,
       experience: experience,
       consultationFee: consultationFee,
+      bookingFee: bookingFee,
       mobileNumber: mobileNumber,
       email: email,
       gender: gender,

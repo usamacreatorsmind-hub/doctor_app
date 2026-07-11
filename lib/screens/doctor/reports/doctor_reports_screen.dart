@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/app_routes.dart';
 import 'doctor_reports_controller.dart';
 
 class DoctorReportsScreen extends GetView<DoctorReportsController> {
@@ -11,10 +12,14 @@ class DoctorReportsScreen extends GetView<DoctorReportsController> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        title: const Text('Doctor Reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        backgroundColor: Colors.white,
+        title: const Text('Doctor Reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.primary,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () => Get.toNamed(AppRoutes.notifications)),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -108,10 +113,7 @@ class DoctorReportsScreen extends GetView<DoctorReportsController> {
                   Container(
                     width: 12,
                     height: 80 * heights[index],
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.3), borderRadius: BorderRadius.circular(4)),
                   ),
                   const SizedBox(height: 8),
                   Text(['M', 'T', 'W', 'T', 'F', 'S', 'S'][index], style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
@@ -142,7 +144,10 @@ class DoctorReportsScreen extends GetView<DoctorReportsController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Total Revenue', style: TextStyle(color: Colors.white70, fontSize: 12)),
-              Text('₹${controller.totalEarnings.value.toInt()}', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                '₹${controller.totalEarnings.value.toInt()}',
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           const Spacer(),

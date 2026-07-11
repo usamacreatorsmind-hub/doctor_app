@@ -12,8 +12,10 @@ class PaymentController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late String appointmentId;
-  late double amount;
+  late double doctorFee;
+  late double bookingFee; // Customizable Slot Booking Charge
   late String doctorName;
+  late String patientName;
   late String date;
   late String time;
 
@@ -28,11 +30,14 @@ class PaymentController extends GetxController {
         args['appointmentId'] != null &&
         args['amount'] != null &&
         args['doctorName'] != null &&
+        args['patientName'] != null &&
         args['date'] != null &&
         args['time'] != null) {
       appointmentId = args['appointmentId'];
-      amount = args['amount'];
+      doctorFee = args['amount'];
+      bookingFee = args['bookingFee'] ?? 50.0; // Receive from booking flow
       doctorName = args['doctorName'];
+      patientName = args['patientName'];
       date = args['date'];
       time = args['time'];
     } else {
@@ -40,6 +45,8 @@ class PaymentController extends GetxController {
       AppSnackBar.show('Payment details missing');
     }
   }
+
+  double get totalToPay => bookingFee;
 
   void selectPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
@@ -49,6 +56,11 @@ class PaymentController extends GetxController {
   Future<void> processPayment() async {
     if (_auth.currentUser == null) {
       AppSnackBar.show('User not logged in');
+      return;
+    }
+
+    if (selectedPaymentMethod.value.isEmpty) {
+      AppSnackBar.show('Please select a payment method');
       return;
     }
 
@@ -64,24 +76,29 @@ class PaymentController extends GetxController {
         paymentId: '', // Firestore will generate
         appointmentId: appointmentId,
         patientId: _auth.currentUser!.uid,
-        amount: amount,
+        amount: totalToPay, // Only paying Platform Fee online
         paymentMethod: selectedPaymentMethod.value,
         transactionId: 'TRX${DateTime.now().millisecondsSinceEpoch}', // Dummy transaction ID
         paymentDate: DateTime.now().toIso8601String(),
-        status: 'Success', createdAt: DateTime.now(),
+        status: 'Success',
+        createdAt: DateTime.now(),
       );
 
       await _firestoreService.createPayment(payment);
 
-      // Update appointment status to 'Confirmed' and 'Paid'
+      // Update appointment status
+      // paymentStatus indicates Slot Booking Charge is paid, Doctor Fee to be paid in Cash
       await _firestoreService.updateAppointment(appointmentId, {
         'status': 'Confirmed',
-        'paymentStatus': 'Paid',
+        'paymentStatus': 'Booking Charge Paid',
+        'bookingCharge': bookingFee,
         'transactionId': payment.transactionId,
       });
-      AppSnackBar.show('Payment successful');
+
+      AppSnackBar.show('Booking confirmed! Slot booking charge paid successfully.');
       Get.offNamed(AppRoutes.bookingSuccess, arguments: {
         'doctorName': doctorName,
+        'patientName': patientName,
         'date': date,
         'time': time,
       });

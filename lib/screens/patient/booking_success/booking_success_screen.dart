@@ -49,6 +49,8 @@ class BookingSuccessScreen extends GetView<BookingSuccessController> {
                 ),
                 child: Column(
                   children: [
+                    _summaryItem(Icons.person_rounded, 'Patient', controller.patientName),
+                    const Divider(height: 24),
                     _summaryItem(Icons.calendar_today_rounded, 'Date', controller.date),
                     const Divider(height: 24),
                     _summaryItem(Icons.access_time_rounded, 'Time', controller.time),

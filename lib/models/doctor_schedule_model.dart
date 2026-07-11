@@ -88,24 +88,34 @@ class DoctorScheduleModel {
   }
 
   List<String> generateSlots() {
+    if (startTime.isEmpty || endTime.isEmpty) return [];
+    
     final slots = <String>[];
-    final start = _parseTime(startTime);
-    final end = _parseTime(endTime);
-    final breakStart = breakStartTime != null ? _parseTime(breakStartTime!) : null;
-    final breakEnd = breakEndTime != null ? _parseTime(breakEndTime!) : null;
+    try {
+      final start = _parseTime(startTime);
+      final end = _parseTime(endTime);
+      final breakStart = (breakStartTime != null && breakStartTime!.isNotEmpty) ? _parseTime(breakStartTime!) : null;
+      final breakEnd = (breakEndTime != null && breakEndTime!.isNotEmpty) ? _parseTime(breakEndTime!) : null;
 
-    DateTime current = start;
-    while (current.isBefore(end)) {
-      final slotEnd = current.add(Duration(minutes: slotDurationMins));
-      if (breakStart != null && breakEnd != null) {
-        if (current.isAfter(breakStart) || current.isAtSameMomentAs(breakStart)) {
-          current = breakEnd;
-          continue;
+      DateTime current = start;
+      while (current.isBefore(end)) {
+        final slotEnd = current.add(Duration(minutes: slotDurationMins));
+        
+        // Skip if within break time
+        if (breakStart != null && breakEnd != null) {
+          if ((current.isAfter(breakStart) || current.isAtSameMomentAs(breakStart)) && 
+              current.isBefore(breakEnd)) {
+            current = breakEnd;
+            continue;
+          }
         }
+        
+        if (slotEnd.isAfter(end)) break;
+        slots.add('${current.hour.toString().padLeft(2, '0')}:${current.minute.toString().padLeft(2, '0')}');
+        current = slotEnd;
       }
-      if (slotEnd.isAfter(end)) break;
-      slots.add('${current.hour.toString().padLeft(2, '0')}:${current.minute.toString().padLeft(2, '0')}');
-      current = slotEnd;
+    } catch (e) {
+      print("Error generating slots: $e");
     }
     return slots;
   }

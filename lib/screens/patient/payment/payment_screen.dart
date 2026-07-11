@@ -8,59 +8,108 @@ class PaymentScreen extends GetView<PaymentController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgPage,
-      appBar: AppBar(
-        title: const Text('Make Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        backgroundColor: AppColors.bgPage,
+        appBar: AppBar(
+          title: const Text('Make Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          foregroundColor: AppColors.textPrimary,
+        ),
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPaymentSummary(),
+                const SizedBox(height: 24),
+                _buildPaymentMethodSelector(),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: Colors.blue, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'This slot booking charge ensures your appointment. The doctor consultancy fee is collected by the clinic/reception directly in cash.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 100), // Space for bottom button
+              ],
+            ),
+          );
+        }),
+        bottomSheet: _buildBottomAction(),
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPaymentSummary(),
-              const SizedBox(height: 20),
-              _buildPaymentMethodSelector(),
-              const SizedBox(height: 20),
-              _buildDummyPaymentForm(),
-              const SizedBox(height: 100), // Space for bottom button
-            ],
-          ),
-        );
-      }),
-      bottomSheet: _buildBottomAction(),
     );
   }
 
   Widget _buildPaymentSummary() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Payment Summary', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const Divider(height: 24),
-          _summaryRow('Doctor', controller.doctorName),
-          const SizedBox(height: 10),
-          _summaryRow('Date', controller.date),
-          const SizedBox(height: 10),
-          _summaryRow('Time', controller.time),
-          const SizedBox(height: 10),
-          _summaryRow('Amount', '₹${controller.amount.toInt()}', isBold: true, textColor: AppColors.primary),
+          const Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: AppColors.primary, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Fee Breakdown',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          const Divider(height: 32),
+          _summaryRow('Doctor Consultation Fee', '₹${controller.doctorFee.toInt()}'),
+          const SizedBox(height: 8),
+          const Text(
+            '• This fee is shown for information only, no online payment required',
+            style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          _summaryRow('Slot Booking Charge', '₹${controller.bookingFee.toInt()}'),
+          const SizedBox(height: 8),
+          const Text(
+            '• Only the slot booking charge needs to be paid online',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+          ),
+          const Divider(height: 32),
+          Row(
+            children: [
+              const Text(
+                'Total Payable Now',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              const Spacer(),
+              Text(
+                '₹${controller.totalToPay.toInt()}',
+                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -69,9 +118,12 @@ class PaymentScreen extends GetView<PaymentController> {
   Widget _summaryRow(String label, String value, {bool isBold = false, Color textColor = AppColors.textPrimary}) {
     return Row(
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
         const Spacer(),
-        Text(value, style: TextStyle(color: textColor, fontWeight: isBold ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
+        Text(
+          value,
+          style: TextStyle(color: textColor, fontWeight: isBold ? FontWeight.bold : FontWeight.w600, fontSize: 14),
+        ),
       ],
     );
   }
@@ -80,123 +132,120 @@ class PaymentScreen extends GetView<PaymentController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Select Payment Method', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        const SizedBox(height: 12),
-        Obx(() => Row(
-          children: [
-            Expanded(child: _paymentMethodCard('UPI', Icons.qr_code_rounded, controller.selectedPaymentMethod.value == 'UPI')),
-            const SizedBox(width: 12),
-            Expanded(child: _paymentMethodCard('Card', Icons.credit_card_rounded, controller.selectedPaymentMethod.value == 'Card')),
-            const SizedBox(width: 12),
-            Expanded(child: _paymentMethodCard('Net Banking', Icons.account_balance_rounded, controller.selectedPaymentMethod.value == 'Net Banking')),
-          ],
-        )),
+        const Text(
+          'Select Payment Method',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 16),
+        Obx(
+          () => Column(
+            children: [
+              _robustPaymentOption(
+                'UPI',
+                'Google Pay, PhonePe, etc.',
+                Icons.qr_code_rounded,
+                controller.selectedPaymentMethod.value == 'UPI',
+              ),
+              const SizedBox(height: 12),
+              _robustPaymentOption(
+                'Card',
+                'Debit or Credit Card',
+                Icons.credit_card_rounded,
+                controller.selectedPaymentMethod.value == 'Card',
+              ),
+              const SizedBox(height: 12),
+              _robustPaymentOption(
+                'Net Banking',
+                'All major banks',
+                Icons.account_balance_rounded,
+                controller.selectedPaymentMethod.value == 'Net Banking',
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _paymentMethodCard(String method, IconData icon, bool isSelected) {
+  Widget _robustPaymentOption(String title, String subtitle, IconData icon, bool isSelected) {
     return GestureDetector(
-      onTap: () => controller.selectPaymentMethod(method),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+      onTap: () => controller.selectPaymentMethod(title),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primarySurface : AppColors.bgWhite,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder, width: isSelected ? 1.5 : 1),
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.primaryBorder.withValues(alpha: 0.5),
+            width: isSelected ? 2 : 1,
+          ),
         ),
-        child: Column(
+        child: Row(
           children: [
-            Icon(icon, size: 28, color: isSelected ? AppColors.primary : AppColors.textSecondary),
-            const SizedBox(height: 8),
-            Text(method, style: TextStyle(color: isSelected ? AppColors.primary : AppColors.textPrimary, fontWeight: FontWeight.w600)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: isSelected ? AppColors.primary : AppColors.bgPage, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: isSelected ? Colors.white : AppColors.textSecondary, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 24)
+            else
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primaryBorder),
+                ),
+              ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDummyPaymentForm() {
-    // This is a dummy form for simulation purposes.
-    // In a real app, this would be actual payment gateway widgets.
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Payment Details (Dummy)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          TextFormField(
-            decoration: InputDecoration(
-              labelText: 'Card Number / UPI ID',
-              prefixIcon: const Icon(Icons.payment, color: AppColors.textSecondary, size: 20),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Expiry Date',
-                    prefixIcon: const Icon(Icons.date_range, color: AppColors.textSecondary, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'CVV',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textSecondary, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildBottomAction() {
-    return Obx(() => Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5))
-            ],
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: controller.isLoading.value ? null : controller.processPayment,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: controller.isLoading.value
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Pay Now', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+    return Obx(
+      () => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: controller.isLoading.value ? null : controller.processPayment,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+            child: controller.isLoading.value
+                ? const CircularProgressIndicator(color: Colors.white)
+                : Text('Pay ₹${controller.bookingFee.toInt()} Now', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

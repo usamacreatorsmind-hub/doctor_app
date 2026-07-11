@@ -41,4 +41,10 @@ class AppRoutes {
   static const String hospitalReports      = '/hospital-reports';
   static const String hospitalJoinRequests = '/hospital-join-requests';
   static const String hospitalDepartments  = '/hospital-departments';
+  static const String addReceptionist      = '/add-receptionist';
+
+  // Receptionist
+  static const String receptionistDashboard    = '/receptionist-dashboard';
+  static const String receptionistAppointments = '/receptionist-appointments';
+  static const String walkInBooking            = '/walk-in-booking';
 }

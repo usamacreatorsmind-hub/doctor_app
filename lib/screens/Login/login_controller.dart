@@ -8,7 +8,7 @@ import '../../utils/helper.dart';
 import '../role_selection/role_selection_controller.dart';
 import '../../services/notification_service.dart';
 
-enum LoginRole { hospitalAdmin, doctor, patient }
+enum LoginRole { hospitalAdmin, doctor, patient, receptionist }
 
 class LoginController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -28,19 +28,24 @@ class LoginController extends GetxController {
     super.onInit();
     final args = Get.arguments as Map<String, dynamic>?;
     if (args != null && args['role'] != null) {
-      final UserRole passedRole = args['role'] as UserRole;
-      switch (passedRole) {
-        case UserRole.hospitalAdmin:
-          selectedRole.value = LoginRole.hospitalAdmin;
-          break;
-        case UserRole.doctor:
-          selectedRole.value = LoginRole.doctor;
-          break;
-        case UserRole.patient:
-          selectedRole.value = LoginRole.patient;
-          break;
-        default:
-          selectedRole.value = LoginRole.patient;
+      if (args['role'] is UserRole) {
+        final UserRole passedRole = args['role'] as UserRole;
+        switch (passedRole) {
+          case UserRole.hospitalAdmin:
+            selectedRole.value = LoginRole.hospitalAdmin;
+            break;
+          case UserRole.doctor:
+            selectedRole.value = LoginRole.doctor;
+            break;
+          case UserRole.patient:
+            selectedRole.value = LoginRole.patient;
+            break;
+          case UserRole.receptionist:
+            selectedRole.value = LoginRole.receptionist;
+            break;
+        }
+      } else if (args['role'] is LoginRole) {
+        selectedRole.value = args['role'];
       }
     }
     update();
@@ -49,11 +54,6 @@ class LoginController extends GetxController {
   @override
   void onClose() {
     super.onClose();
-  }
-
-  void selectRole(LoginRole role) {
-    selectedRole.value = role;
-    update();
   }
 
   void togglePasswordVisibility() {
@@ -81,9 +81,6 @@ class LoginController extends GetxController {
         final String uid = userCredential.user!.uid;
         final String email = userCredential.user!.email ?? emailController.text.trim();
 
-        // Update FCM Token immediately after login
-        NotificationService.to.updateToken();
-
         UserModel? userData = await _authRepository.getUserData(uid);
         
         if (userData == null) {
@@ -95,6 +92,9 @@ class LoginController extends GetxController {
           }
         }
 
+        // Update FCM Token immediately after login/migration
+        await NotificationService.to.updateToken();
+
         if (userData != null) {
           AppSnackBar.show('Welcome back, ${userData.name}!');
 
@@ -104,6 +104,8 @@ class LoginController extends GetxController {
             Get.offAllNamed(AppRoutes.doctorDashboard);
           } else if (userData.role == 'hospital_admin') {
             Get.offAllNamed(AppRoutes.hospitalDashboard);
+          } else if (userData.role == 'receptionist') {
+            Get.offAllNamed(AppRoutes.receptionistDashboard);
           } else {
             Get.offAllNamed(AppRoutes.roleSelection);
           }

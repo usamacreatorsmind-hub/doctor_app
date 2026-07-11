@@ -24,13 +24,29 @@ class NotificationsController extends GetxController {
       return;
     }
 
-    // Wiring real-time stream from Firestore
-    notifications.bindStream(_firestoreService.getUserNotifications(user.uid));
-    
-    // Set loading to false once we get the first snapshot
-    notifications.listen((data) {
-      if (isLoading.value) isLoading.value = false;
-    });
+    try {
+      // Wiring real-time stream from Firestore
+      notifications.bindStream(
+        _firestoreService.getUserNotifications(user.uid).handleError((error) {
+          print("Error in notifications stream: $error");
+          isLoading.value = false;
+        }),
+      );
+
+      // Set loading to false once we get the first snapshot
+      notifications.listen(
+        (data) {
+          if (isLoading.value) isLoading.value = false;
+        },
+        onError: (error) {
+          print("Error in notifications listener: $error");
+          isLoading.value = false;
+        },
+      );
+    } catch (e) {
+      print("Error initializing notifications stream: $e");
+      isLoading.value = false;
+    }
   }
 
   void markAsRead(String id) async {

@@ -53,6 +53,12 @@ class FirestoreService {
     return UserModel.fromMap(snap.docs.first.data() as Map<String, dynamic>, snap.docs.first.id);
   }
 
+  Future<UserModel?> getUserByMobile(String mobile) async {
+    final snap = await _users.where('mobile', isEqualTo: mobile).limit(1).get();
+    if (snap.docs.isEmpty) return null;
+    return UserModel.fromMap(snap.docs.first.data() as Map<String, dynamic>, snap.docs.first.id);
+  }
+
   Future<void> migrateUserToUid(String oldId, UserModel user) async {
     if (oldId != user.uid) {
       final batch = _db.batch();
@@ -67,6 +73,20 @@ class FirestoreService {
   Future<void> updateUser(String uid, Map<String, dynamic> data) async {
     data['updatedAt'] = FieldValue.serverTimestamp();
     await _users.doc(uid).update(data);
+  }
+
+  Future<void> deleteUser(String uid) async {
+    await _users.doc(uid).delete();
+  }
+
+  Future<List<UserModel>> getReceptionistsByHospital(String hospitalId) async {
+    final snap = await _users.where('role', isEqualTo: 'receptionist').where('hospitalId', isEqualTo: hospitalId).get();
+    return snap.docs.map((d) => UserModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+  }
+
+  Future<List<UserModel>> getReceptionistsByDoctor(String doctorId) async {
+    final snap = await _users.where('role', isEqualTo: 'receptionist').where('doctorId', isEqualTo: doctorId).get();
+    return snap.docs.map((d) => UserModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
   }
 
   Future<void> savePatientProfile(String uid, PatientProfileModel profile) async {
@@ -128,9 +148,7 @@ class FirestoreService {
       print("Firestore Error (getAllHospitals): $e");
       try {
         final allSnap = await _hospitals.get();
-        return allSnap.docs
-            .map((d) => HospitalModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-            .toList();
+        return allSnap.docs.map((d) => HospitalModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
       } catch (_) {
         return [];
       }
@@ -154,16 +172,20 @@ class FirestoreService {
   }
 
   Future<DoctorModel?> getDoctorByUid(String uid) async {
-    final snap = await _doctors.where('uid', isEqualTo: uid).limit(1).get();
+    // Try searching by 'uid' first
+    var snap = await _doctors.where('uid', isEqualTo: uid).limit(1).get();
+
+    // If not found, try searching by 'userId' (Legacy or mismatch support)
+    if (snap.docs.isEmpty) {
+      snap = await _doctors.where('userId', isEqualTo: uid).limit(1).get();
+    }
+
     if (snap.docs.isEmpty) return null;
     return DoctorModel.fromMap(snap.docs.first.data() as Map<String, dynamic>, snap.docs.first.id);
   }
 
   Future<List<DoctorModel>> getDoctorsByHospital(String hospitalId) async {
-    final snap = await _doctors
-        .where('hospitalIds', arrayContains: hospitalId)
-        .where('status', isEqualTo: 'active')
-        .get();
+    final snap = await _doctors.where('hospitalIds', arrayContains: hospitalId).where('status', isEqualTo: 'active').get();
     return snap.docs.map((d) => DoctorModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
   }
 
@@ -176,10 +198,7 @@ class FirestoreService {
   }
 
   Future<List<Map<String, dynamic>>> getHospitalJoinRequests(String hospitalId) async {
-    final snap = await _joinRequests
-        .where('hospitalId', isEqualTo: hospitalId)
-        .where('status', isEqualTo: 'pending')
-        .get();
+    final snap = await _joinRequests.where('hospitalId', isEqualTo: hospitalId).where('status', isEqualTo: 'pending').get();
     return snap.docs.map((doc) => {...doc.data() as Map<String, dynamic>, 'id': doc.id}).toList();
   }
 
@@ -192,10 +211,7 @@ class FirestoreService {
     final batch = _db.batch();
 
     // 1. Update Request Status
-    batch.update(_joinRequests.doc(requestId), {
-      'status': status,
-      'respondedAt': FieldValue.serverTimestamp(),
-    });
+    batch.update(_joinRequests.doc(requestId), {'status': status, 'respondedAt': FieldValue.serverTimestamp()});
 
     // 2. If approved, add hospitalId to doctor's hospitalIds list
     if (status == 'approved') {
@@ -232,9 +248,7 @@ class FirestoreService {
 
       final snap = await query.limit(limit).get();
 
-      List<DoctorModel> results = snap.docs
-          .map((d) => DoctorModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList();
+      List<DoctorModel> results = snap.docs.map((d) => DoctorModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
 
       // Secondary in-memory filtering
       if (maxFee != null) {
@@ -248,15 +262,13 @@ class FirestoreService {
           final specMatch = d.specialization.any((s) => s.toLowerCase().contains(term));
           final symMatch = d.symptomsCovered.any((s) => s.toLowerCase().contains(term));
           final disMatch = d.diseasesCovered.any((dis) => dis.toLowerCase().contains(term));
-          return nameMatch || specMatch || symMatch || d.doctorName.toLowerCase().contains(term);
+          final clinicMatch = d.clinicName?.toLowerCase().contains(term) ?? false;
+          
+          return nameMatch || specMatch || symMatch || disMatch || clinicMatch;
         }).toList();
       }
 
-      return {
-        'docs': results,
-        'lastDoc': snap.docs.isNotEmpty ? snap.docs.last : null,
-        'hasMore': snap.docs.length == limit,
-      };
+      return {'docs': results, 'lastDoc': snap.docs.isNotEmpty ? snap.docs.last : null, 'hasMore': snap.docs.length == limit};
     } catch (e) {
       print("Firestore Paginated Search Error: $e");
       return {'docs': [], 'lastDoc': null, 'hasMore': false};
@@ -266,9 +278,7 @@ class FirestoreService {
   Future<List<DoctorModel>> getTopDoctors({int limit = 10}) async {
     try {
       final snap = await _doctors.where('status', whereIn: ['active', 'Active']).get();
-      List<DoctorModel> list = snap.docs
-          .map((d) => DoctorModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList();
+      List<DoctorModel> list = snap.docs.map((d) => DoctorModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
       list.sort((a, b) => (b.rating).compareTo(a.rating));
       return list.take(limit).toList();
     } catch (e) {
@@ -279,7 +289,25 @@ class FirestoreService {
 
   Future<void> updateDoctor(String doctorId, Map<String, dynamic> data) async {
     data['updatedAt'] = FieldValue.serverTimestamp();
-    await _doctors.doc(doctorId).update(data);
+    
+    // Robust check: If doctorId is empty, try to find by uid first
+    if (doctorId.isEmpty && data['uid'] != null) {
+      final snap = await _doctors.where('uid', isEqualTo: data['uid']).limit(1).get();
+      if (snap.docs.isNotEmpty) {
+        await snap.docs.first.reference.update(data);
+        return;
+      } else {
+        // If not found at all, create it
+        await _doctors.add(data);
+        return;
+      }
+    }
+    
+    if (doctorId.isNotEmpty) {
+      await _doctors.doc(doctorId).update(data);
+    } else {
+      throw Exception("Doctor ID and UID both missing. Cannot update profile.");
+    }
   }
 
   // Master Data Methods with robust extraction fallback
@@ -299,10 +327,7 @@ class FirestoreService {
         }
         return symptoms.toList()..sort();
       }
-      return snap.docs
-          .map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '')
-          .where((s) => s.isNotEmpty)
-          .toList()
+      return snap.docs.map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '').where((s) => s.isNotEmpty).toList()
         ..sort();
     } catch (e) {
       print("Firestore Error (getSymptoms): $e");
@@ -326,10 +351,7 @@ class FirestoreService {
         }
         return diseases.toList()..sort();
       }
-      return snap.docs
-          .map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '')
-          .where((s) => s.isNotEmpty)
-          .toList()
+      return snap.docs.map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '').where((s) => s.isNotEmpty).toList()
         ..sort();
     } catch (e) {
       print("Firestore Error (getDiseases): $e");
@@ -361,10 +383,7 @@ class FirestoreService {
         return specs.toList()..sort();
       }
 
-      return snap.docs
-          .map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '')
-          .where((s) => s.isNotEmpty)
-          .toList()
+      return snap.docs.map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '').where((s) => s.isNotEmpty).toList()
         ..sort();
     } catch (e) {
       print("Firestore Error (getSpecializations): $e");
@@ -396,10 +415,7 @@ class FirestoreService {
         return quals.toList()..sort();
       }
 
-      return snap.docs
-          .map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '')
-          .where((s) => s.isNotEmpty)
-          .toList()
+      return snap.docs.map((d) => (d.data() as Map<String, dynamic>?)?['name']?.toString() ?? '').where((s) => s.isNotEmpty).toList()
         ..sort();
     } catch (e) {
       print("Firestore Error (getQualifications): $e");
@@ -417,13 +433,8 @@ class FirestoreService {
   }
 
   Future<List<DoctorScheduleModel>> getDoctorSchedules(String doctorId) async {
-    final snap = await _schedules
-        .where('doctorId', isEqualTo: doctorId)
-        .where('availabilityStatus', isEqualTo: 'available')
-        .get();
-    return snap.docs
-        .map((doc) => DoctorScheduleModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-        .toList();
+    final snap = await _schedules.where('doctorId', isEqualTo: doctorId).where('availabilityStatus', isEqualTo: 'available').get();
+    return snap.docs.map((doc) => DoctorScheduleModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
   }
 
   Future<void> updateSchedule(String scheduleId, Map<String, dynamic> data) async {
@@ -454,9 +465,7 @@ class FirestoreService {
   Future<List<AppointmentModel>> getPatientAppointments(String patientId) async {
     try {
       final snap = await _appointments.where('patientId', isEqualTo: patientId).get();
-      final list = snap.docs
-          .map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList();
+      final list = snap.docs.map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     } catch (e) {
@@ -468,9 +477,7 @@ class FirestoreService {
   Future<List<AppointmentModel>> getDoctorAppointments(String doctorId, {String? date}) async {
     try {
       final snap = await _appointments.where('doctorId', isEqualTo: doctorId).get();
-      var list = snap.docs
-          .map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList();
+      var list = snap.docs.map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
       if (date != null && date.isNotEmpty) {
         list = list.where((a) => a.appointmentDate == date).toList();
       }
@@ -499,15 +506,9 @@ class FirestoreService {
       }
 
       final snap = await query.limit(limit).get();
-      final results = snap.docs
-          .map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList();
+      final results = snap.docs.map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
 
-      return {
-        'docs': results,
-        'lastDoc': snap.docs.isNotEmpty ? snap.docs.last : null,
-        'hasMore': snap.docs.length == limit,
-      };
+      return {'docs': results, 'lastDoc': snap.docs.isNotEmpty ? snap.docs.last : null, 'hasMore': snap.docs.length == limit};
     } catch (e) {
       print("Error in getDoctorAppointmentsPaginated: $e");
       return {'docs': [], 'lastDoc': null, 'hasMore': false};
@@ -516,14 +517,17 @@ class FirestoreService {
 
   Future<List<AppointmentModel>> getHospitalAppointments(String hospitalId, {String? date}) async {
     try {
-      final snap = await _appointments.where('hospitalId', isEqualTo: hospitalId).get();
-      var list = snap.docs
-          .map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-          .toList();
+      Query query = _appointments.where('hospitalId', isEqualTo: hospitalId);
+
       if (date != null && date.isNotEmpty) {
-        list = list.where((a) => a.appointmentDate == date).toList();
+        query = query.where('appointmentDate', isEqualTo: date);
       }
-      list.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+
+      final snap = await query.get();
+      var list = snap.docs.map((d) => AppointmentModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+
+      // Sort by time slot for the given day
+      list.sort((a, b) => a.timeSlot.compareTo(b.timeSlot));
       return list;
     } catch (e) {
       print("Error in getHospitalAppointments: $e");
@@ -533,10 +537,7 @@ class FirestoreService {
 
   Future<List<String>> getBookedSlots(String doctorId, String date) async {
     try {
-      final snap = await _appointments
-          .where('doctorId', isEqualTo: doctorId)
-          .where('appointmentDate', isEqualTo: date)
-          .get();
+      final snap = await _appointments.where('doctorId', isEqualTo: doctorId).where('appointmentDate', isEqualTo: date).get();
       return snap.docs
           .map((d) => d.data() as Map<String, dynamic>)
           .where((data) => data['status'] != 'Cancelled')
@@ -549,10 +550,7 @@ class FirestoreService {
   }
 
   Future<void> updateAppointmentStatus(String appointmentId, String status) async {
-    await _appointments.doc(appointmentId).update({
-      'status': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _appointments.doc(appointmentId).update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
   // ════════════════════════════════════════
@@ -566,9 +564,7 @@ class FirestoreService {
 
   Future<List<PrescriptionModel>> getPatientPrescriptions(String patientId) async {
     final snap = await _prescriptions.where('patientId', isEqualTo: patientId).get();
-    return snap.docs
-        .map((doc) => PrescriptionModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-        .toList();
+    return snap.docs.map((doc) => PrescriptionModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
   }
 
   Future<PrescriptionModel?> getPrescriptionByAppointment(String appointmentId) async {
@@ -621,11 +617,10 @@ class FirestoreService {
   }
 
   Future<List<ReviewModel>> getDoctorReviews(String doctorId) async {
-    final snap = await _reviews
-        .where('doctorId', isEqualTo: doctorId)
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snap.docs.map((d) => ReviewModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+    final snap = await _reviews.where('doctorId', isEqualTo: doctorId).get();
+    final list = snap.docs.map((d) => ReviewModel.fromMap(d.data() as Map<String, dynamic>, d.id)).toList();
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   Future<bool> hasPatientReviewed(String appointmentId) async {
@@ -642,15 +637,11 @@ class FirestoreService {
   }
 
   Stream<List<NotificationModel>> getUserNotifications(String userId) {
-    return _notifications
-        .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-              .toList(),
-        );
+    return _notifications.where('userId', isEqualTo: userId).snapshots().map((snapshot) {
+      final list = snapshot.docs.map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
   }
 
   Future<void> markNotificationRead(String notificationId) async {
@@ -658,10 +649,7 @@ class FirestoreService {
   }
 
   Future<void> markAllNotificationsRead(String userId) async {
-    final unreadSnap = await _notifications
-        .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false)
-        .get();
+    final unreadSnap = await _notifications.where('userId', isEqualTo: userId).where('isRead', isEqualTo: false).get();
 
     if (unreadSnap.docs.isEmpty) return;
 

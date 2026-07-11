@@ -21,10 +21,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _goToNextPage() {
     if (_currentPage < onboardingData.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
+      _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
     } else {
       _navigateToRoleSelection();
     }
@@ -52,6 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             // ── PageView ──
@@ -63,10 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   setState(() => _currentPage = index);
                 },
                 itemBuilder: (context, index) {
-                  return OnboardingPage(
-                    data: onboardingData[index],
-                    pageIndex: index,
-                  );
+                  return OnboardingPage(data: onboardingData[index], pageIndex: index);
                 },
               ),
             ),
@@ -85,10 +80,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         children: [
           // Dots
-          PageIndicatorDots(
-            totalPages: onboardingData.length,
-            currentPage: _currentPage,
-          ),
+          PageIndicatorDots(totalPages: onboardingData.length, currentPage: _currentPage),
           const SizedBox(height: 20),
 
           // Next / Get Started Button
@@ -101,17 +93,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _isLastPage ? 'Get Started' : 'Next',
-                    style: AppTextStyles.btnPrimary,
-                  ),
+                  Text(_isLastPage ? 'Get Started' : 'Next', style: AppTextStyles.btnPrimary),
                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward_rounded, size: 20),
                 ],
@@ -135,14 +122,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
-                _isLastPage ? 'Already have an account? Login' : 'Skip',
-                style: AppTextStyles.btnSecondary,
-              ),
+              child: Text(_isLastPage ? 'Already have an account? Login' : 'Skip', style: AppTextStyles.btnSecondary),
             ),
           ),
         ],

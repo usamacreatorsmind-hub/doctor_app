@@ -15,25 +15,23 @@ class LoginScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: AppColors.bgPage,
           body: SafeArea(
+            top: false,
             child: SingleChildScrollView(
               child: Column(
                 children: [
+
                   // ── Blue Header ──
-                  _buildHeader(),
+                  _buildHeader(controller),
 
                   // ── Body ──
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
                     child: Column(
                       children: [
-                        // Role Pills
-                        _buildRolePills(controller),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
 
                         // Form: Email/OTP toggle
-                        controller.loginWithOtp.value
-                            ? _buildOtpForm(controller)
-                            : _buildEmailForm(controller),
+                        controller.loginWithOtp.value ? _buildOtpForm(controller) : _buildEmailForm(controller),
 
                         const SizedBox(height: 20),
 
@@ -60,78 +58,43 @@ class LoginScreen extends StatelessWidget {
   }
 
   // ── Blue Header ──
-  Widget _buildHeader() {
+  Widget _buildHeader(LoginController controller) {
+    String roleName = 'Account';
+    switch (controller.selectedRole.value) {
+      case LoginRole.patient:
+        roleName = 'Patient';
+        break;
+      case LoginRole.doctor:
+        roleName = 'Doctor';
+        break;
+      case LoginRole.hospitalAdmin:
+        roleName = 'Hospital Admin';
+        break;
+      case LoginRole.receptionist:
+        roleName = 'Receptionist';
+        break;
+    }
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 30),
+      padding: const EdgeInsets.fromLTRB(24, 80, 24, 30),
       decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
       ),
       child: Column(
         children: [
           Container(
             width: 66,
             height: 66,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.18),
-            ),
-            child: const Icon(Icons.favorite_rounded, size: 32, color: Colors.white),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.18)),
+            child: const Icon(Icons.favorite_rounded, size: 35, color: Colors.white),
           ),
           const SizedBox(height: 14),
-          const Text('Welcome Back', style: AppTextStyles.heading2),
+          Text('Login as $roleName', style: AppTextStyles.heading2),
           const SizedBox(height: 5),
           const Text('Sign in to your account', style: AppTextStyles.body),
         ],
-      ),
-    );
-  }
-
-  // ── Role Pills ──
-  Widget _buildRolePills(LoginController controller) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.primarySurface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.primaryBorder),
-      ),
-      child: Row(
-        children: [
-          _rolePill(controller, LoginRole.hospitalAdmin, 'Hospital Admin'),
-          _rolePill(controller, LoginRole.doctor, 'Doctor'),
-          _rolePill(controller, LoginRole.patient, 'Patient'),
-        ],
-      ),
-    );
-  }
-
-  Widget _rolePill(LoginController c, LoginRole role, String label) {
-    final bool isActive = c.selectedRole.value == role;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => c.selectRole(role),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isActive ? Colors.white : AppColors.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -164,11 +127,7 @@ class LoginScreen extends StatelessWidget {
               onTap: controller.goToForgotPassword,
               child: const Text(
                 'Forgot Password?',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
               ),
             ),
           ),
@@ -220,9 +179,7 @@ class LoginScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            controller.loginWithOtp.value
-                ? 'or login with email'
-                : 'or login with',
+            controller.loginWithOtp.value ? 'or login with email' : 'or login with',
             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ),
@@ -238,16 +195,9 @@ class LoginScreen extends StatelessWidget {
       height: 48,
       child: OutlinedButton.icon(
         onPressed: controller.toggleLoginMode,
-        icon: Icon(
-          controller.loginWithOtp.value
-              ? Icons.mail_outline_rounded
-              : Icons.phone_android_rounded,
-          size: 18,
-        ),
+        icon: Icon(controller.loginWithOtp.value ? Icons.mail_outline_rounded : Icons.phone_android_rounded, size: 18),
         label: Text(
-          controller.loginWithOtp.value
-              ? 'Login with Email & Password'
-              : 'Login with Mobile OTP',
+          controller.loginWithOtp.value ? 'Login with Email & Password' : 'Login with Mobile OTP',
           style: AppTextStyles.btnSecondary,
         ),
         style: OutlinedButton.styleFrom(
@@ -275,19 +225,12 @@ class LoginScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            text,
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
+          Text(text, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           GestureDetector(
             onTap: onTap,
             child: Text(
               actionText,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -308,11 +251,10 @@ class LoginScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
@@ -324,14 +266,10 @@ class LoginScreen extends StatelessWidget {
             hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
             prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
             prefixText: prefix,
-            prefixStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary),
+            prefixStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
             filled: true,
             fillColor: AppColors.bgWhite,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primaryBorder, width: 1.5),
@@ -359,11 +297,10 @@ class LoginScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Password',
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary)),
+        const Text(
+          'Password',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller.passwordController,
@@ -373,22 +310,18 @@ class LoginScreen extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Enter your password',
             hintStyle: TextStyle(fontSize: 13, color: AppColors.textHint),
-            prefixIcon: const Icon(Icons.lock_outline_rounded,
-                color: AppColors.primary, size: 20),
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 20),
             suffixIcon: GestureDetector(
               onTap: controller.togglePasswordVisibility,
               child: Icon(
-                controller.isPasswordHidden.value
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+                controller.isPasswordHidden.value ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppColors.textSecondary,
                 size: 20,
               ),
             ),
             filled: true,
             fillColor: AppColors.bgWhite,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primaryBorder, width: 1.5),
@@ -412,12 +345,7 @@ class LoginScreen extends StatelessWidget {
   }
 
   // ── Primary Button ──
-  Widget _buildPrimaryButton({
-    required String label,
-    required IconData icon,
-    required bool isLoading,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildPrimaryButton({required String label, required IconData icon, required bool isLoading, required VoidCallback onTap}) {
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -431,14 +359,7 @@ class LoginScreen extends StatelessWidget {
           disabledBackgroundColor: AppColors.primaryBorder,
         ),
         child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
-              )
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

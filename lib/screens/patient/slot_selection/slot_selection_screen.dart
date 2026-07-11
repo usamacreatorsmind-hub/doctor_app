@@ -48,7 +48,7 @@ class SlotSelectionScreen extends GetView<SlotSelectionController> {
           ],
         );
       }),
-      bottomNavigationBar: _buildBottomAction(),
+      bottomNavigationBar: SafeArea(child: _buildBottomAction()),
     );
   }
 
