@@ -73,6 +73,11 @@ class AuthRepository {
     return await _firestoreService.getUserByEmail(email);
   }
 
+  // Get User Data by Mobile
+  Future<UserModel?> getUserByMobile(String mobile) async {
+    return await _firestoreService.getUserByMobile(mobile);
+  }
+
   // Migrate user record to Auth UID
   Future<void> migrateUser(String oldId, UserModel user) async {
     await _firestoreService.migrateUserToUid(oldId, user);

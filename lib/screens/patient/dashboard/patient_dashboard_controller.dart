@@ -11,6 +11,7 @@ class PatientDashboardController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final isLoading = false.obs;
+  final selectedIndex = 0.obs;
   final selectedSpecIndex = 0.obs;
   final patientName = 'Patient'.obs;
   final specializations = <String>[].obs;
@@ -87,15 +88,21 @@ class PatientDashboardController extends GetxController {
   void onSpecializationTapped(int index) {
     selectedSpecIndex.value = index;
     update();
-    Get.toNamed(AppRoutes.doctorSearch, arguments: {'specialization': specializations[index]});
+    changeTab(1); // Switch to Search Tab
+    // Get.toNamed(AppRoutes.doctorSearch, arguments: {'specialization': specializations[index]});
+  }
+
+  void changeTab(int index) {
+    selectedIndex.value = index;
+    update();
   }
 
   void onDoctorBookTapped(DoctorModel doctor) => Get.toNamed(AppRoutes.doctorProfile, arguments: {'doctor': doctor});
-  void onViewAllAppointments() => Get.toNamed(AppRoutes.patientAppointments);
-  void onSeeAllDoctors() => Get.toNamed(AppRoutes.doctorSearch);
-  void onSearchTapped() => Get.toNamed(AppRoutes.doctorSearch);
+  void onViewAllAppointments() => changeTab(2); // Switch to History Tab
+  void onSeeAllDoctors() => changeTab(1); // Switch to Book Tab
+  void onSearchTapped() => changeTab(1); // Switch to Book Tab
   void onNotificationTapped() => Get.toNamed(AppRoutes.notifications);
-  void onProfileTapped() => Get.toNamed(AppRoutes.patientProfile);
+  void onProfileTapped() => changeTab(3); // Switch to Profile Tab
 
   Future<void> onRefresh() async => await _loadDashboardData();
 }

@@ -114,9 +114,34 @@ class OtpController extends GetxController {
       } else if (isLogin) {
         final userCredential = await FirebaseAuth.instance.signInWithCredential(phoneAuthCredential);
         if (userCredential.user != null) {
+          final String uid = userCredential.user!.uid;
           await NotificationService.to.updateToken();
-          UserModel? userData = await _firestoreService.getUser(userCredential.user!.uid);
+          
+          UserModel? userData = await _firestoreService.getUser(uid);
+          
+          if (userData == null) {
+            // Try finding user by mobile number if UID lookup fails
+            userData = await _authRepository.getUserByMobile(mobileNumber);
+            if (userData != null) {
+              String oldDocId = userData.uid;
+              userData = userData.copyWith(uid: uid);
+              await _authRepository.migrateUser(oldDocId, userData);
+              debugPrint("User migrated from $oldDocId to $uid via OTP Login");
+            }
+          }
+
           if (userData != null) {
+            // --- Role Validation ---
+            String selectedRoleStr = _getRoleString(role);
+            if (userData.role != selectedRoleStr) {
+              await _authRepository.signOut();
+              AppSnackBar.show('Access Denied: You are registered as a ${userData.role}.');
+              isLoading.value = false;
+              update();
+              return;
+            }
+            // -----------------------
+            
             _navigateAfterVerification(userData.role);
           } else {
             AppSnackBar.show("User record not found in database. Please register.");
@@ -208,6 +233,21 @@ class OtpController extends GetxController {
   }
 
   void goBack() => Get.back();
+
+  String _getRoleString(LoginRole role) {
+    switch (role) {
+      case LoginRole.hospitalAdmin:
+        return 'hospital_admin';
+      case LoginRole.doctor:
+        return 'doctor';
+      case LoginRole.patient:
+        return 'patient';
+      case LoginRole.receptionist:
+        return 'receptionist';
+      default:
+        return 'patient';
+    }
+  }
 
   @override
   void onClose() {

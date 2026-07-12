@@ -1,10 +1,11 @@
-// lib/screens/patient/dashboard/patient_dashboard_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../models/doctor_model.dart';
+import '../doctor_search/doctor_search_screen.dart';
+import '../appointments/patient_appointments_screen.dart';
+import '../patient_profile/patient_profile_screen.dart';
 import 'patient_dashboard_controller.dart';
 
 class PatientDashboardScreen extends StatelessWidget {
@@ -16,46 +17,55 @@ class PatientDashboardScreen extends StatelessWidget {
       builder: (controller) {
         return Scaffold(
           backgroundColor: AppColors.bgPage,
-          body: Obx(() =>
-          controller.isLoading.value
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-              : RefreshIndicator(
-            onRefresh: controller.onRefresh,
-            color: AppColors.primary,
-            child: CustomScrollView(
-              slivers: [
-                _buildTopSection(controller),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 50),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // Upcoming Appointment Section
-                      Obx(() {
-                        if (controller.upcomingAppointment.value == null)
-                          return const SizedBox.shrink();
-                        return Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            _buildUpcomingSection(controller),
-                          ],
-                        );
-                      }),
-
-                      const SizedBox(height: 24),
-                      _buildQuickActions(), // PRESCRIPTION BUTTON IS HERE
-                      const SizedBox(height: 24),
-                      _buildSpecializationsSection(controller),
-                      const SizedBox(height: 24),
-                      _buildTopDoctorsSection(controller),
-                    ]),
-                  ),
-                ),
+          body: Obx(
+            () => IndexedStack(
+              index: controller.selectedIndex.value,
+              children: [
+                _buildHomeTab(controller),
+                const DoctorSearchScreen(),
+                const PatientAppointmentsScreen(),
+                const PatientProfileScreen(),
               ],
             ),
-          )),
+          ),
           bottomNavigationBar: SafeArea(child: _buildBottomNav(controller)),
         );
       },
+    );
+  }
+
+  Widget _buildHomeTab(PatientDashboardController controller) {
+    return Obx(
+      () => controller.isLoading.value
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : RefreshIndicator(
+              onRefresh: controller.onRefresh,
+              color: AppColors.primary,
+              child: CustomScrollView(
+                slivers: [
+                  _buildTopSection(controller),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 50),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // Upcoming Appointment Section
+                        Obx(() {
+                          if (controller.upcomingAppointment.value == null) return const SizedBox.shrink();
+                          return Column(children: [const SizedBox(height: 20), _buildUpcomingSection(controller)]);
+                        }),
+
+                        const SizedBox(height: 24),
+                        _buildQuickActions(), // PRESCRIPTION BUTTON IS HERE
+                        const SizedBox(height: 24),
+                        _buildSpecializationsSection(controller),
+                        const SizedBox(height: 24),
+                        _buildTopDoctorsSection(controller),
+                      ]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -75,20 +85,18 @@ class PatientDashboardScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Welcome Back,', style: TextStyle(
-                              fontSize: 12, color: Colors.white70)),
+                          const Text('Welcome Back,', style: TextStyle(fontSize: 12, color: Colors.white70)),
                           const SizedBox(height: 2),
-                          Obx(() =>
-                              Text(
-                                controller.patientName.value.toUpperCase(),
-                                style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              )),
+                          Obx(
+                            () => Text(
+                              controller.patientName.value.toUpperCase(),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    _buildIconBtn(Icons.notifications_outlined, controller.onNotificationTapped,
-                        hasBadge: true),
+                    _buildIconBtn(Icons.notifications_outlined, controller.onNotificationTapped, hasBadge: true),
                     const SizedBox(width: 10),
                     _buildAvatar(controller),
                   ],
@@ -144,9 +152,7 @@ class PatientDashboardScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
           border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
         ),
         child: Column(
@@ -170,19 +176,23 @@ class PatientDashboardScreen extends StatelessWidget {
       child: Stack(
         children: [
           Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle, color: Colors.white.withOpacity(0.15)),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.15)),
             child: Icon(icon, color: Colors.white, size: 22),
           ),
           if (hasBadge)
             Positioned(
-              top: 8, right: 8,
+              top: 8,
+              right: 8,
               child: Container(
-                width: 8, height: 8,
-                decoration: BoxDecoration(shape: BoxShape.circle,
-                    color: Colors.red,
-                    border: Border.all(color: AppColors.primary, width: 1.5)),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red,
+                  border: Border.all(color: AppColors.primary, width: 1.5),
+                ),
               ),
             ),
         ],
@@ -194,15 +204,13 @@ class PatientDashboardScreen extends StatelessWidget {
     return GestureDetector(
       onTap: controller.onProfileTapped,
       child: Container(
-        width: 40, height: 40,
+        width: 40,
+        height: 40,
         decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
         child: Center(
           child: Text(
-            controller.patientName.value.isNotEmpty
-                ? controller.patientName.value[0].toUpperCase()
-                : 'P',
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+            controller.patientName.value.isNotEmpty ? controller.patientName.value[0].toUpperCase() : 'P',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
           ),
         ),
       ),
@@ -221,8 +229,7 @@ class PatientDashboardScreen extends StatelessWidget {
             children: [
               Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
               SizedBox(width: 10),
-              Text('Search doctor, symptom, disease...',
-                  style: TextStyle(fontSize: 13, color: Colors.grey)),
+              Text('Search doctor, symptom, disease...', style: TextStyle(fontSize: 13, color: Colors.grey)),
             ],
           ),
         ),
@@ -235,25 +242,24 @@ class PatientDashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))
-          ],
-          border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5))),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Upcoming Appointment',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const Text('Upcoming Appointment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               GestureDetector(
                 onTap: controller.onViewAllAppointments,
-                child: const Text('View All', style: TextStyle(
-                    fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                child: const Text(
+                  'View All',
+                  style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -261,9 +267,9 @@ class PatientDashboardScreen extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 50, height: 50,
-                decoration: BoxDecoration(
-                    color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 24),
               ),
               const SizedBox(width: 12),
@@ -271,10 +277,8 @@ class PatientDashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(appt.doctorName ?? 'Doctor',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text(appt.specialization ?? 'Specialist',
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(appt.doctorName ?? 'Doctor', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(appt.specialization ?? 'Specialist', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
@@ -286,11 +290,15 @@ class PatientDashboardScreen extends StatelessWidget {
             children: [
               const Icon(Icons.access_time_rounded, size: 14, color: AppColors.textSecondary),
               const SizedBox(width: 4),
-              Text('${appt.appointmentDate} · ${appt.timeSlot}', style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+              Text(
+                '${appt.appointmentDate} · ${appt.timeSlot}',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+              ),
               const Spacer(),
-              Text(appt.hospitalName ?? '', style: const TextStyle(
-                  fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500)),
+              Text(
+                appt.hospitalName ?? '',
+                style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
+              ),
             ],
           ),
         ],
@@ -303,7 +311,9 @@ class PatientDashboardScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
       child: Text(
-          label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)),
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
+      ),
     );
   }
 
@@ -315,35 +325,34 @@ class PatientDashboardScreen extends StatelessWidget {
         const SizedBox(height: 12),
         SizedBox(
           height: 40,
-          child: Obx(() =>
-              ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: controller.specializations.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  final spec = controller.specializations[index];
-                  final bool isActive = controller.selectedSpecIndex.value == index;
-                  return GestureDetector(
-                    onTap: () => controller.onSpecializationTapped(index),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isActive ? AppColors.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: isActive ? AppColors.primary : AppColors.primaryBorder,
-                            width: 1),
-                      ),
-                      child: Text(spec,
-                          style: TextStyle(fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isActive ? Colors.white : AppColors.textPrimary)),
+          child: Obx(
+            () => ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: controller.specializations.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final spec = controller.specializations[index];
+                final bool isActive = controller.selectedSpecIndex.value == index;
+                return GestureDetector(
+                  onTap: () => controller.onSpecializationTapped(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isActive ? AppColors.primary : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isActive ? AppColors.primary : AppColors.primaryBorder, width: 1),
                     ),
-                  );
-                },
-              )),
+                    child: Text(
+                      spec,
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isActive ? Colors.white : AppColors.textPrimary),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ],
     );
@@ -356,15 +365,14 @@ class PatientDashboardScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Obx(() {
           if (controller.topDoctors.isEmpty) {
-            return const Center(child: Text(
-                'No doctors available', style: TextStyle(fontSize: 13, color: Colors.grey)));
+            return const Center(
+              child: Text('No doctors available', style: TextStyle(fontSize: 13, color: Colors.grey)),
+            );
           }
           return Column(
-            children: controller.topDoctors.map((doc) =>
-                _DoctorCard(
-                  doctor: doc,
-                  onBook: () => controller.onDoctorBookTapped(doc),
-                )).toList(),
+            children: controller.topDoctors
+                .map((doc) => _DoctorCard(doctor: doc, onBook: () => controller.onDoctorBookTapped(doc)))
+                .toList(),
           );
         }),
       ],
@@ -376,29 +384,34 @@ class PatientDashboardScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        TextButton(onPressed: onAction,
-            child: Text(action,
-                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))),
+        TextButton(
+          onPressed: onAction,
+          child: Text(
+            action,
+            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildBottomNav(PatientDashboardController controller) {
     return Container(
-      padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20, top: 10),
-      decoration: BoxDecoration(color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
-          ]),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _navItem(Icons.home_filled, 'Home', true, () {}),
-          _navItem(Icons.calendar_month_rounded, 'Book', false, controller.onSeeAllDoctors),
-          _navItem(Icons.assignment_rounded, 'History', false, controller.onViewAllAppointments),
-          _navItem(Icons.person_rounded, 'Profile', false, controller.onProfileTapped),
-        ],
+      padding: const EdgeInsets.only(bottom: 10, top: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+      ),
+      child: Obx(
+        () => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _navItem(Icons.home_filled, 'Home', controller.selectedIndex.value == 0, () => controller.changeTab(0)),
+            _navItem(Icons.calendar_month_rounded, 'Book', controller.selectedIndex.value == 1, () => controller.changeTab(1)),
+            _navItem(Icons.assignment_rounded, 'History', controller.selectedIndex.value == 2, () => controller.changeTab(2)),
+            _navItem(Icons.person_rounded, 'Profile', controller.selectedIndex.value == 3, () => controller.changeTab(3)),
+          ],
+        ),
       ),
     );
   }
@@ -411,9 +424,14 @@ class PatientDashboardScreen extends StatelessWidget {
         children: [
           Icon(icon, color: isActive ? AppColors.primary : Colors.grey.shade400, size: 26),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10,
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? AppColors.primary : Colors.grey)),
+              color: isActive ? AppColors.primary : Colors.grey,
+            ),
+          ),
         ],
       ),
     );
@@ -441,37 +459,37 @@ class _DoctorCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 70, height: 70,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
                 color: AppColors.bgPage,
                 borderRadius: BorderRadius.circular(12),
-                image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty) ? DecorationImage(
-                    image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
+                image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty)
+                    ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover)
+                    : null,
               ),
-              child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty) ? const Icon(
-                  Icons.person, color: Colors.grey, size: 30) : null,
+              child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 30) : null,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(doctor.doctorName,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                  Text(doctor.specialization.join(', '),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      overflow: TextOverflow.ellipsis),
+                  Text(doctor.doctorName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text(
+                    doctor.specialization.join(', '),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                      Text(doctor.rating.toString(),
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(doctor.rating.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 8),
                       const Icon(Icons.work_history_outlined, size: 14, color: Colors.blue),
                       const SizedBox(width: 4),
-                      Text('${doctor.experience} yrs',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      Text('${doctor.experience} yrs', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                     ],
                   ),
                 ],
@@ -479,10 +497,12 @@ class _DoctorCard extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: onBook,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
               child: const Text('Book', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             ),
           ],

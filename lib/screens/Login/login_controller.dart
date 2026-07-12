@@ -72,17 +72,29 @@ class LoginController extends GetxController {
     update();
 
     try {
-      UserCredential? userCredential = await _authRepository.signIn(
-        emailController.text.trim(),
-        passwordController.text.trim(),
-      );
+      String loginIdentifier = emailController.text.trim();
+
+      // If the input is a 10-digit mobile number, find the associated email first
+      if (GetUtils.isPhoneNumber(loginIdentifier) && loginIdentifier.length == 10) {
+        UserModel? userByMobile = await _authRepository.getUserByMobile(loginIdentifier);
+        if (userByMobile != null) {
+          loginIdentifier = userByMobile.email;
+        } else {
+          AppSnackBar.show("No account found with this mobile number.");
+          isLoading.value = false;
+          update();
+          return;
+        }
+      }
+
+      UserCredential? userCredential = await _authRepository.signIn(loginIdentifier, passwordController.text.trim());
 
       if (userCredential != null && userCredential.user != null) {
         final String uid = userCredential.user!.uid;
         final String email = userCredential.user!.email ?? emailController.text.trim();
 
         UserModel? userData = await _authRepository.getUserData(uid);
-        
+
         if (userData == null) {
           userData = await _authRepository.getUserByEmail(email);
           if (userData != null) {
@@ -96,6 +108,17 @@ class LoginController extends GetxController {
         await NotificationService.to.updateToken();
 
         if (userData != null) {
+          // --- Role Validation ---
+          String selectedRoleStr = _getRoleString(selectedRole.value);
+          if (userData.role != selectedRoleStr) {
+            await _authRepository.signOut();
+            AppSnackBar.show('Access Denied: You are registered as a ${userData.role}. Please use the correct login screen.');
+            isLoading.value = false;
+            update();
+            return;
+          }
+          // -----------------------
+
           AppSnackBar.show('Welcome back, ${userData.name}!');
 
           if (userData.role == 'patient') {
@@ -166,6 +189,21 @@ class LoginController extends GetxController {
 
   void goToRegister() => Get.toNamed(AppRoutes.register, arguments: {'role': selectedRole.value});
   void goToForgotPassword() => Get.toNamed(AppRoutes.forgotPassword);
+
+  String _getRoleString(LoginRole role) {
+    switch (role) {
+      case LoginRole.hospitalAdmin:
+        return 'hospital_admin';
+      case LoginRole.doctor:
+        return 'doctor';
+      case LoginRole.patient:
+        return 'patient';
+      case LoginRole.receptionist:
+        return 'receptionist';
+      default:
+        return 'patient';
+    }
+  }
 
   String? validateEmail(String? value) => (value == null || !GetUtils.isEmail(value)) ? 'Invalid email' : null;
   String? validatePassword(String? value) => (value == null || value.length < 6) ? 'Min 6 characters' : null;

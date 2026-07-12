@@ -15,6 +15,7 @@ class OtpVerificationScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: AppColors.bgPage,
           body: SafeArea(
+            top: false,
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -33,7 +34,7 @@ class OtpVerificationScreen extends StatelessWidget {
 
                         // Title
                         const Text('Enter Verification Code',
-                            style: AppTextStyles.heading2),
+                            style: TextStyle( fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black)),
                         const SizedBox(height: 6),
                         const Text(
                           'A 6-digit OTP has been sent to your\nregistered mobile number',
@@ -91,7 +92,7 @@ class OtpVerificationScreen extends StatelessWidget {
   Widget _buildHeader(OtpController controller) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 28),
+      padding: const EdgeInsets.fromLTRB(24, 70, 24, 28),
       decoration: const BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.only(
