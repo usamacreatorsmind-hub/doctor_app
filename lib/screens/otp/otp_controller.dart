@@ -116,9 +116,9 @@ class OtpController extends GetxController {
         if (userCredential.user != null) {
           final String uid = userCredential.user!.uid;
           await NotificationService.to.updateToken();
-          
+
           UserModel? userData = await _firestoreService.getUser(uid);
-          
+
           if (userData == null) {
             // Try finding user by mobile number if UID lookup fails
             userData = await _authRepository.getUserByMobile(mobileNumber);
@@ -141,7 +141,7 @@ class OtpController extends GetxController {
               return;
             }
             // -----------------------
-            
+
             _navigateAfterVerification(userData.role);
           } else {
             AppSnackBar.show("User record not found in database. Please register.");

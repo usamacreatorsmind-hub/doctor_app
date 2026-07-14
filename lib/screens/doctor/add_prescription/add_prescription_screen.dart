@@ -16,64 +16,62 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: controller.formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPatientInfo(),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Doctor Remarks'),
-              const SizedBox(height: 8),
-              _buildTextArea(controller.remarksController, 'General observations...', validator: (v) => v!.isEmpty ? 'Required' : null),
-              
-              const SizedBox(height: 24),
-              _buildSectionTitle('Medicines'),
-              const SizedBox(height: 12),
-              _buildMedicineInputForm(),
-              const SizedBox(height: 16),
-              _buildAddedMedicinesList(),
-              
-              const SizedBox(height: 24),
-              _buildSectionTitle('Recommended Tests'),
-              const SizedBox(height: 8),
-              _buildTextArea(controller.testsController, 'e.g. Blood Test, X-Ray (Comma separated)...', maxLines: 2),
-              
-              const SizedBox(height: 24),
-              _buildSectionTitle('Follow-up Date'),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: controller.followUpController,
-                decoration: InputDecoration(
-                  hintText: 'e.g. After 1 week',
-                  prefixIcon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-                ),
-              ),
-              
-              const SizedBox(height: 40),
-              Obx(() => SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: controller.isLoading.value ? null : controller.savePrescription,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: controller.formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPatientInfo(),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Doctor Remarks'),
+                const SizedBox(height: 8),
+                _buildTextArea(controller.remarksController, 'General observations...', validator: (v) => v!.isEmpty ? 'Required' : null),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Medicines'),
+                const SizedBox(height: 12),
+                _buildMedicineInputForm(),
+                const SizedBox(height: 16),
+                _buildAddedMedicinesList(),
+                _buildSectionTitle('Recommended Tests'),
+                const SizedBox(height: 8),
+                _buildTextArea(controller.testsController, 'e.g. Blood Test, X-Ray (Comma separated)...', maxLines: 2),
+                const SizedBox(height: 15),
+                _buildSectionTitle('Follow-up Date'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: controller.followUpController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. After 1 week',
+                    prefixIcon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
                   ),
-                  child: controller.isLoading.value
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Save & Complete Appointment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
-              )),
-              const SizedBox(height: 20),
-            ],
+                
+                const SizedBox(height: 30),
+                Obx(() => SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: controller.isLoading.value ? null : controller.savePrescription,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: controller.isLoading.value
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Save & Complete Appointment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                )),
+
+              ],
+            ),
           ),
         ),
       ),
@@ -167,6 +165,7 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
         );
       }
       return ListView.separated(
+        padding: EdgeInsets.only(top: 0,bottom: 10),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: controller.medicines.length,

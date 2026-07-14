@@ -169,7 +169,7 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
         children: [
           const Text('Patient Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           const Divider(height: 24),
-          _textField(label: 'Full Name', controller: controller.otherNameController, hint: 'Enter name'),
+          _textField(label: 'Patient Name', controller: controller.otherNameController, hint: 'Enter patient full name'),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -230,6 +230,10 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
                   )),
             ],
           ),
+          const SizedBox(height: 16),
+          _textField(label: 'Parents/Guardian Name', controller: controller.otherGuardianController, hint: 'Enter guardian name'),
+          const SizedBox(height: 16),
+          _textField(label: 'Address', controller: controller.otherAddressController, hint: 'Enter full address'),
           const SizedBox(height: 16),
           _textField(label: 'Mobile Number (Optional)', controller: controller.otherMobileController, hint: 'Enter mobile', keyboardType: TextInputType.phone),
         ],

@@ -792,12 +792,16 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
             ),
             const SizedBox(height: 20),
             _detailItem(Icons.person_outline, 'Patient Name', appt.patientName ?? 'N/A'),
+            _detailItem(Icons.people_outline, 'Relationship', '${appt.patientDetails?['relationship'] ?? 'Self'}'),
+            _detailItem(
+              Icons.info_outline,
+              'Patient Info',
+              '${appt.patientDetails?['age'] ?? 'N/A'}, ${appt.patientDetails?['gender'] ?? 'N/A'}',
+            ),
             if (!appt.isForSelf)
-              _detailItem(
-                Icons.people_outline,
-                'Booking For',
-                '${appt.patientDetails?['relationship'] ?? 'Other'} (${appt.patientDetails?['age'] ?? 'N/A'} yrs, ${appt.patientDetails?['gender'] ?? 'N/A'})',
-              ),
+              _detailItem(Icons.person_pin_rounded, 'Parents/Guardian', appt.patientDetails?['guardianName'] ?? 'N/A'),
+
+            _detailItem(Icons.location_on_outlined, 'Patient Address', appt.patientDetails?['address'] ?? 'N/A'),
             _detailItem(Icons.calendar_today_outlined, 'Date & Time', '${appt.appointmentDate} at ${appt.timeSlot}'),
             _detailItem(Icons.medical_services_outlined, 'Consultation Type', appt.consultationType),
             _detailItem(Icons.sick_outlined, 'Symptoms', appt.symptoms.isEmpty ? 'No symptoms reported' : appt.symptoms),

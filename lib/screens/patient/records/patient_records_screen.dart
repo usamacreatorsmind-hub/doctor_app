@@ -69,12 +69,17 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(record.doctorName ?? 'Doctor', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                Text('Prescribed on ${record.createdAt.day}/${record.createdAt.month}/${record.createdAt.year}', 
-                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                Text(
+                                  'Prescribed on ${record.createdAt.day}/${record.createdAt.month}/${record.createdAt.year}',
+                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
+                          IconButton(
+                            onPressed: () => controller.downloadPrescription(record),
+                            icon: const Icon(Icons.download_for_offline_rounded, color: AppColors.primary),
+                          ),
                         ],
                       ),
                       const Divider(height: 24),
@@ -90,7 +95,10 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
                           children: [
                             const Icon(Icons.event_repeat_rounded, size: 14, color: Colors.orange),
                             const SizedBox(width: 4),
-                            Text('Follow-up: ${record.followUpDate}', style: const TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600)),
+                            Text(
+                              'Follow-up: ${record.followUpDate}',
+                              style: const TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                            ),
                           ],
                         ),
                       ],
@@ -118,8 +126,14 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-               Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)))),
-               SizedBox(height: 20),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -132,19 +146,18 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
               _infoRow('Doctor', record.doctorName ?? 'N/A'),
               _infoRow('Specialization', record.specialization ?? 'General Physician'),
 
-              
               const SizedBox(height: 16),
               const Text('Medicines', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 8),
               ...record.medicines.map((m) => _medicineItem(m)),
-              
+
               if (record.tests.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Text('Recommended Tests', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 8),
                 Text(record.tests.join(', '), style: const TextStyle(color: AppColors.textSecondary)),
               ],
-              
+
               if (record.doctorRemarks.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Text('Doctor Remarks', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
@@ -156,6 +169,24 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
                 const SizedBox(height: 16),
                 _infoRow('Follow-up', record.followUpDate!, isHighlight: true),
               ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Get.back();
+                    controller.downloadPrescription(record);
+                  },
+                  icon: const Icon(Icons.picture_as_pdf_rounded),
+                  label: const Text('Download PDF Prescription'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
               const SizedBox(height: 30),
             ],
           ),
@@ -172,11 +203,12 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$label: ', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          Expanded(child :Text(value, style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: isHighlight ? Colors.orange : AppColors.textPrimary
-          ))),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isHighlight ? Colors.orange : AppColors.textPrimary),
+            ),
+          ),
         ],
       ),
     );

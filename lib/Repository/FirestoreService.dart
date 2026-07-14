@@ -21,6 +21,7 @@ class FirestoreService {
   CollectionReference get _users => _db.collection('users');
   CollectionReference get _hospitals => _db.collection('hospitals');
   CollectionReference get _doctors => _db.collection('doctors');
+  CollectionReference get _patientsLegacy => _db.collection('patients');
   CollectionReference get _schedules => _db.collection('doctor_schedules');
   CollectionReference get _appointments => _db.collection('appointments');
   CollectionReference get _payments => _db.collection('payments');
@@ -94,9 +95,25 @@ class FirestoreService {
   }
 
   Future<PatientProfileModel?> getPatientProfile(String uid) async {
+    // 1. Try modern location: users/{uid}/profile/details
     final doc = await _users.doc(uid).collection('profile').doc('details').get();
-    if (!doc.exists) return null;
-    return PatientProfileModel.fromMap(doc.data() as Map<String, dynamic>);
+    if (doc.exists) {
+      return PatientProfileModel.fromMap(doc.data() as Map<String, dynamic>);
+    }
+
+    // 2. Fallback to legacy location: patients collection where userId == uid
+    final legacySnap = await _patientsLegacy.where('userId', isEqualTo: uid).limit(1).get();
+    if (legacySnap.docs.isNotEmpty) {
+      return PatientProfileModel.fromMap(legacySnap.docs.first.data() as Map<String, dynamic>);
+    }
+
+    // 3. Last fallback: patients collection where docId == uid (if seeded without userId)
+    final legacyDoc = await _patientsLegacy.doc(uid).get();
+    if (legacyDoc.exists) {
+      return PatientProfileModel.fromMap(legacyDoc.data() as Map<String, dynamic>);
+    }
+
+    return null;
   }
 
   // ════════════════════════════════════════
@@ -263,7 +280,7 @@ class FirestoreService {
           final symMatch = d.symptomsCovered.any((s) => s.toLowerCase().contains(term));
           final disMatch = d.diseasesCovered.any((dis) => dis.toLowerCase().contains(term));
           final clinicMatch = d.clinicName?.toLowerCase().contains(term) ?? false;
-          
+
           return nameMatch || specMatch || symMatch || disMatch || clinicMatch;
         }).toList();
       }
@@ -289,7 +306,7 @@ class FirestoreService {
 
   Future<void> updateDoctor(String doctorId, Map<String, dynamic> data) async {
     data['updatedAt'] = FieldValue.serverTimestamp();
-    
+
     // Robust check: If doctorId is empty, try to find by uid first
     if (doctorId.isEmpty && data['uid'] != null) {
       final snap = await _doctors.where('uid', isEqualTo: data['uid']).limit(1).get();
@@ -302,7 +319,7 @@ class FirestoreService {
         return;
       }
     }
-    
+
     if (doctorId.isNotEmpty) {
       await _doctors.doc(doctorId).update(data);
     } else {

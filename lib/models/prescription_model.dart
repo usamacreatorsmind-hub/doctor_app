@@ -92,11 +92,12 @@ class PrescriptionModel {
   }
 
   PrescriptionModel copyWith({
+    String? prescriptionId,
     String? doctorName,
     String? specialization,
   }) {
     return PrescriptionModel(
-      prescriptionId: prescriptionId,
+      prescriptionId: prescriptionId ?? this.prescriptionId,
       appointmentId: appointmentId,
       doctorId: doctorId,
       patientId: patientId,

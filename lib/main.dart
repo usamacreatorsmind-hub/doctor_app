@@ -29,19 +29,22 @@ class DoctorAppointmentApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Doctor Appointment App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF1565C0),
-        useMaterial3: true,
-        fontFamily: 'Poppins',
-        scaffoldBackgroundColor: const Color(0xFFF5F9FF),
+    return SafeArea(
+      top: false,
+      child: GetMaterialApp(
+        title: 'Doctor Appointment App',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorSchemeSeed: const Color(0xFF1565C0),
+          useMaterial3: true,
+          fontFamily: 'Poppins',
+          scaffoldBackgroundColor: const Color(0xFFF5F9FF),
+        ),
+        initialBinding: InitialBinding(),
+        initialRoute: AppRoutes.splash,
+        getPages: AppPages.pages,
+        defaultTransition: Transition.fade,
       ),
-      initialBinding: InitialBinding(),
-      initialRoute: AppRoutes.splash,
-      getPages: AppPages.pages,
-      defaultTransition: Transition.fade,
     );
   }
 }

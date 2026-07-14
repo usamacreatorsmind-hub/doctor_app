@@ -48,11 +48,20 @@ class PatientProfileModel {
     return null;
   }
 
+  static String? _parseDateToString(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) {
+      final date = value.toDate();
+      return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    }
+    return value.toString();
+  }
+
   factory PatientProfileModel.fromMap(Map<String, dynamic> map) {
     return PatientProfileModel(
-      profilePhoto: map['profilePhoto'],
-      dob: map['dob'],
-      gender: map['gender'],
+      profilePhoto: map['profilePhoto'] ?? map['profilePhotoUrl'],
+      dob: _parseDateToString(map['dob']),
+      gender: map['gender']?.toString(),
       bloodGroup: map['bloodGroup'],
       address: map['address'],
       city: map['city'],
@@ -64,9 +73,9 @@ class PatientProfileModel {
       emergencyContactName: map['emergencyContactName'],
       emergencyContactNumber: map['emergencyContactNumber'],
       emergencyContactRelation: map['emergencyContactRelation'],
-      insuranceProvider: map['insuranceProvider'],
-      insurancePolicyNumber: map['insurancePolicyNumber'],
-      isProfileComplete: map['isProfileComplete'] ?? false,
+      insuranceProvider: map['insuranceProvider'] ?? map['insuranceDetails']?['provider'],
+      insurancePolicyNumber: map['insurancePolicyNumber'] ?? map['insuranceDetails']?['policyNo'],
+      isProfileComplete: map['isProfileComplete'] ?? true,
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
     );
   }

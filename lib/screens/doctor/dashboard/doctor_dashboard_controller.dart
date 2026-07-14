@@ -139,18 +139,7 @@ class DoctorDashboardController extends GetxController {
       
       List<AppointmentModel> enhancedAppts = [];
       for (var appt in results) {
-        try {
-          final patientData = await _firestoreService.getUser(appt.patientId);
-          String patientName = patientData?.name ?? 'Patient';
-          if (!appt.isForSelf && appt.patientDetails != null && appt.patientDetails!['name'] != null) {
-            patientName = appt.patientDetails!['name'];
-          }
-          enhancedAppts.add(appt.copyWith(
-            patientName: patientName,
-          ));
-        } catch (e) {
-          enhancedAppts.add(appt.copyWith(patientName: 'Patient'));
-        }
+        enhancedAppts.add(await _enhanceAppointment(appt));
       }
       
       appointments.assignAll(enhancedAppts);
@@ -183,18 +172,7 @@ class DoctorDashboardController extends GetxController {
 
       List<AppointmentModel> enhancedAppts = [];
       for (var appt in results) {
-        try {
-          final patientData = await _firestoreService.getUser(appt.patientId);
-          String patientName = patientData?.name ?? 'Patient';
-          if (!appt.isForSelf && appt.patientDetails != null && appt.patientDetails!['name'] != null) {
-            patientName = appt.patientDetails!['name'];
-          }
-          enhancedAppts.add(appt.copyWith(
-            patientName: patientName,
-          ));
-        } catch (e) {
-          enhancedAppts.add(appt.copyWith(patientName: 'Patient'));
-        }
+        enhancedAppts.add(await _enhanceAppointment(appt));
       }
       
       appointments.addAll(enhancedAppts);
@@ -204,6 +182,61 @@ class DoctorDashboardController extends GetxController {
       isLoadMore.value = false;
       update();
     }
+  }
+
+  Future<AppointmentModel> _enhanceAppointment(AppointmentModel appt) async {
+    try {
+      final patientData = await _firestoreService.getUser(appt.patientId);
+      String patientName = patientData?.name ?? 'Patient';
+      Map<String, dynamic>? details = appt.patientDetails;
+
+      if (appt.isForSelf) {
+        final profile = await _firestoreService.getPatientProfile(appt.patientId);
+        if (profile != null) {
+          details = {
+            'name': patientName,
+            'age': _calculateAge(profile.dob),
+            'gender': profile.gender ?? 'N/A',
+            'address': profile.address ?? 'N/A',
+            'relationship': 'Self',
+          };
+        }
+      } else if (appt.patientDetails != null && appt.patientDetails!['name'] != null) {
+        patientName = appt.patientDetails!['name'];
+      }
+
+      return appt.copyWith(
+        patientName: patientName,
+        patientDetails: details,
+      );
+    } catch (e) {
+      return appt.copyWith(patientName: 'Patient');
+    }
+  }
+
+  String _calculateAge(String? dobStr) {
+    if (dobStr == null || dobStr.isEmpty) return "N/A";
+    try {
+      DateTime? dob;
+      if (dobStr.contains('/')) {
+        List<String> parts = dobStr.split('/');
+        if (parts.length == 3) {
+          dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        }
+      } else {
+        dob = DateTime.tryParse(dobStr);
+      }
+
+      if (dob != null) {
+        final now = DateTime.now();
+        int age = now.year - dob.year;
+        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) age--;
+        return "$age Years";
+      }
+    } catch (e) {
+      debugPrint("Age calculation error: $e");
+    }
+    return "N/A";
   }
 
   Future<void> updateAppointmentStatus(String appointmentId, String status) async {

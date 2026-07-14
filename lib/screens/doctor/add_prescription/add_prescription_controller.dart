@@ -5,6 +5,7 @@ import '../../../Repository/FirestoreService.dart';
 import '../../../models/prescription_model.dart';
 import '../../../models/appointment_model.dart';
 import '../../../models/doctor_model.dart';
+import '../../../services/pdf_service.dart';
 import '../../../utils/helper.dart';
 
 class AddPrescriptionController extends GetxController {
@@ -22,7 +23,7 @@ class AddPrescriptionController extends GetxController {
 
   // Structured Medicines
   final medicines = <MedicineModel>[].obs;
-  
+
   // Temporary controllers for adding a new medicine
   final medNameController = TextEditingController();
   final medDosageController = TextEditingController();
@@ -60,13 +61,15 @@ class AddPrescriptionController extends GetxController {
       AppSnackBar.show('Medicine name is required');
       return;
     }
-    
-    medicines.add(MedicineModel(
-      name: medNameController.text.trim(),
-      dosage: medDosageController.text.trim(),
-      frequency: medFreqController.text.trim(),
-      duration: medDurationController.text.trim(),
-    ));
+
+    medicines.add(
+      MedicineModel(
+        name: medNameController.text.trim(),
+        dosage: medDosageController.text.trim(),
+        frequency: medFreqController.text.trim(),
+        duration: medDurationController.text.trim(),
+      ),
+    );
 
     // Clear temp controllers
     medNameController.clear();
@@ -79,9 +82,33 @@ class AddPrescriptionController extends GetxController {
     medicines.removeAt(index);
   }
 
+  String _calculateAge(String dobStr) {
+    try {
+      DateTime? dob;
+      if (dobStr.contains('/')) {
+        List<String> parts = dobStr.split('/');
+        if (parts.length == 3) {
+          dob = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        }
+      } else {
+        dob = DateTime.tryParse(dobStr);
+      }
+
+      if (dob != null) {
+        final now = DateTime.now();
+        int age = now.year - dob.year;
+        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) age--;
+        return "$age Years";
+      }
+    } catch (e) {
+      debugPrint("Age calculation error: $e");
+    }
+    return "N/A";
+  }
+
   Future<void> savePrescription() async {
     if (!formKey.currentState!.validate()) return;
-    
+
     if (medicines.isEmpty) {
       AppSnackBar.show('Please add at least one medicine');
       return;
@@ -91,29 +118,80 @@ class AddPrescriptionController extends GetxController {
     update();
 
     try {
+      final docProfile = doctorProfile.value;
+      if (docProfile == null) throw "Doctor profile not loaded";
+
       final prescription = PrescriptionModel(
-        prescriptionId: '', 
+        prescriptionId: '',
         appointmentId: appointment.appointmentId,
         patientId: appointment.patientId,
         doctorId: appointment.doctorId,
         doctorRemarks: remarksController.text.trim(),
         medicines: medicines.toList(),
-        tests: testsController.text
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList(),
+        tests: testsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
         followUpDate: followUpController.text.trim(),
         createdAt: DateTime.now(),
-        doctorName: doctorProfile.value?.doctorName ?? appointment.doctorName ?? 'Doctor',
-        specialization: doctorProfile.value?.specialization.join(', ') ?? appointment.specialization ?? 'Specialist',
+        doctorName: docProfile.doctorName,
+        specialization: docProfile.specialization.join(', '),
       );
 
-      await _firestoreService.createPrescription(prescription);
+      // 1. Save to Firestore
+      final prescriptionId = await _firestoreService.createPrescription(prescription);
       await _firestoreService.updateAppointmentStatus(appointment.appointmentId, 'Completed');
 
+      // 2. Prepare Data for PDF
+      AppSnackBar.show('Prescription saved. Generating PDF...');
+
+      final hospital = docProfile.hospitalId.isNotEmpty ? await _firestoreService.getHospital(docProfile.hospitalId) : null;
+
+      final patientUser = await _firestoreService.getUser(appointment.patientId);
+      final patientProfile = await _firestoreService.getPatientProfile(appointment.patientId);
+
+      if (patientUser != null) {
+        // Prepare Patient Details for PDF
+        String pName = patientUser.name;
+        String pAge = "N/A";
+        String pGender = "N/A";
+        String pAddress = "N/A";
+        String? gName;
+        String? rel;
+
+        if (appointment.isForSelf) {
+          pName = patientUser.name;
+          pGender = patientProfile?.gender ?? "N/A";
+          pAddress = patientProfile?.address ?? "N/A";
+          rel = "Self";
+          
+          if (patientProfile?.dob != null && patientProfile!.dob!.isNotEmpty) {
+            pAge = _calculateAge(patientProfile!.dob!);
+          }
+        } else if (appointment.patientDetails != null) {
+          pName = appointment.patientDetails!['name'] ?? patientUser.name;
+          pAge = "${appointment.patientDetails!['age']} Years";
+          pGender = appointment.patientDetails!['gender'] ?? "N/A";
+          pAddress = appointment.patientDetails!['address'] ?? "N/A";
+          gName = appointment.patientDetails!['guardianName'];
+          rel = appointment.patientDetails!['relationship'];
+        }
+
+        // 3. Auto-generate PDF
+        await PdfService.generatePrescriptionPdf(
+          prescription: prescription.copyWith(prescriptionId: prescriptionId),
+          doctor: docProfile,
+          hospital: hospital,
+          patientUser: patientUser,
+          appointment: appointment,
+          patientName: pName,
+          patientAge: pAge,
+          patientGender: pGender,
+          patientAddress: pAddress,
+          guardianName: gName,
+          relationship: rel,
+        );
+      }
+
       Get.back();
-      AppSnackBar.show('Prescription saved and appointment completed');
+      AppSnackBar.show('Prescription completed successfully');
     } catch (e) {
       AppSnackBar.show('Failed to save prescription: $e');
     } finally {

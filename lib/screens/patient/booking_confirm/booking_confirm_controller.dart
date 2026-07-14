@@ -26,6 +26,8 @@ class BookingConfirmController extends GetxController {
   final otherNameController = TextEditingController();
   final otherAgeController = TextEditingController();
   final otherMobileController = TextEditingController();
+  final otherGuardianController = TextEditingController();
+  final otherAddressController = TextEditingController();
   final selectedGender = 'Male'.obs;
   final selectedRelationship = 'Father'.obs;
 
@@ -51,6 +53,8 @@ class BookingConfirmController extends GetxController {
     otherNameController.dispose();
     otherAgeController.dispose();
     otherMobileController.dispose();
+    otherGuardianController.dispose();
+    otherAddressController.dispose();
     super.onClose();
   }
 
@@ -71,6 +75,14 @@ class BookingConfirmController extends GetxController {
       }
       if (otherAgeController.text.trim().isEmpty) {
         AppSnackBar.show('Please enter patient age');
+        return;
+      }
+      if (otherGuardianController.text.trim().isEmpty) {
+        AppSnackBar.show('Please enter parents/guardian name');
+        return;
+      }
+      if (otherAddressController.text.trim().isEmpty) {
+        AppSnackBar.show('Please enter address');
         return;
       }
     }
@@ -101,8 +113,10 @@ class BookingConfirmController extends GetxController {
                 'name': otherNameController.text.trim(),
                 'age': otherAgeController.text.trim(),
                 'gender': selectedGender.value,
-                'relationship': selectedRelationship.value,
+                'guardianName': otherGuardianController.text.trim(),
+                'address': otherAddressController.text.trim(),
                 'mobile': otherMobileController.text.trim(),
+                'relationship': selectedRelationship.value,
               },
         createdAt: DateTime.now(),
       );
