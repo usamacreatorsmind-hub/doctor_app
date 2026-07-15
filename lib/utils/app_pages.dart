@@ -48,6 +48,8 @@ import '../screens/doctor/reports/doctor_reports_binding.dart';
 import '../screens/doctor/reports/doctor_reports_screen.dart';
 import '../screens/doctor/profile/doctor_self_profile_binding.dart';
 import '../screens/doctor/profile/doctor_self_profile_screen.dart';
+import '../screens/doctor/reviews/doctor_reviews_binding.dart';
+import '../screens/doctor/reviews/doctor_reviews_screen.dart';
 import '../screens/hospital/dashboard/hospital_dashboard_binding.dart';
 import '../screens/hospital/dashboard/hospital_dashboard_screen.dart';
 import '../screens/hospital/add_doctor/add_doctor_binding.dart';
@@ -195,6 +197,11 @@ class AppPages {
       name: AppRoutes.doctorSelfProfile,
       page: () => const DoctorSelfProfileScreen(),
       binding: DoctorSelfProfileBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.doctorReviews,
+      page: () => const DoctorReviewsScreen(),
+      binding: DoctorReviewsBinding(),
     ),
     GetPage(
       name: AppRoutes.hospitalDashboard,

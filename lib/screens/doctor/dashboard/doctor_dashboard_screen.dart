@@ -290,6 +290,12 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
                   onTap: () => Get.toNamed(AppRoutes.doctorSchedule),
                 ),
                 _profileMenuItem(
+                  icon: Icons.rate_review_outlined,
+                  title: 'Patient Reviews',
+                  subtitle: 'See what patients are saying about you',
+                  onTap: () => Get.toNamed(AppRoutes.doctorReviews),
+                ),
+                _profileMenuItem(
                   icon: Icons.logout_rounded,
                   title: 'Logout',
                   subtitle: 'Sign out of your account',
@@ -507,10 +513,11 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
               const SizedBox(width: 12),
               Expanded(
                 child: _statCard(
-                  'Assistants',
-                  controller.receptionists.length.toString(),
-                  Icons.support_agent_rounded,
+                  'Rating',
+                  '${controller.doctorProfile.value?.rating.toStringAsFixed(1) ?? "0.0"} (${controller.doctorProfile.value?.totalReviews ?? 0})',
+                  Icons.star_rounded,
                   const Color(0xFFEC407A),
+                  onTap: () => Get.toNamed(AppRoutes.doctorReviews),
                 ),
               ),
             ],
@@ -520,33 +527,37 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
-          ),
-        ],
+  Widget _statCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -798,8 +809,7 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
               'Patient Info',
               '${appt.patientDetails?['age'] ?? 'N/A'}, ${appt.patientDetails?['gender'] ?? 'N/A'}',
             ),
-            if (!appt.isForSelf)
-              _detailItem(Icons.person_pin_rounded, 'Parents/Guardian', appt.patientDetails?['guardianName'] ?? 'N/A'),
+            if (!appt.isForSelf) _detailItem(Icons.person_pin_rounded, 'Parents/Guardian', appt.patientDetails?['guardianName'] ?? 'N/A'),
 
             _detailItem(Icons.location_on_outlined, 'Patient Address', appt.patientDetails?['address'] ?? 'N/A'),
             _detailItem(Icons.calendar_today_outlined, 'Date & Time', '${appt.appointmentDate} at ${appt.timeSlot}'),

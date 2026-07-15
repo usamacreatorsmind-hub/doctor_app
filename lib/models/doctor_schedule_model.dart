@@ -87,11 +87,12 @@ class DoctorScheduleModel {
     };
   }
 
-  List<String> generateSlots() {
+  List<String> generateSlots({DateTime? forDate}) {
     if (startTime.isEmpty || endTime.isEmpty) return [];
     
     final slots = <String>[];
     try {
+      final now = DateTime.now();
       final start = _parseTime(startTime);
       final end = _parseTime(endTime);
       final breakStart = (breakStartTime != null && breakStartTime!.isNotEmpty) ? _parseTime(breakStartTime!) : null;
@@ -111,7 +112,22 @@ class DoctorScheduleModel {
         }
         
         if (slotEnd.isAfter(end)) break;
-        slots.add('${current.hour.toString().padLeft(2, '0')}:${current.minute.toString().padLeft(2, '0')}');
+
+        // Filter past slots if the date is today
+        bool isPast = false;
+        if (forDate != null) {
+          final isToday = forDate.year == now.year && forDate.month == now.month && forDate.day == now.day;
+          if (isToday) {
+            final slotTime = DateTime(now.year, now.month, now.day, current.hour, current.minute);
+            if (slotTime.isBefore(now)) {
+              isPast = true;
+            }
+          }
+        }
+
+        if (!isPast) {
+          slots.add('${current.hour.toString().padLeft(2, '0')}:${current.minute.toString().padLeft(2, '0')}');
+        }
         current = slotEnd;
       }
     } catch (e) {

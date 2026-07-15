@@ -1,3 +1,5 @@
+import 'package:flutter/animation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/review_model.dart';
@@ -15,6 +17,8 @@ class DoctorProfileController extends GetxController {
   // Reviews List
   final reviews = <ReviewModel>[].obs;
   final isReviewsLoading = false.obs;
+  final reviewsKey = GlobalKey();
+  final scrollController = ScrollController();
 
   @override
   void onInit() {
@@ -83,10 +87,21 @@ class DoctorProfileController extends GetxController {
     Get.toNamed(AppRoutes.slotSelection, arguments: {'doctor': doctor});
   }
 
+  void scrollToReviews() {
+    scrollController.animateTo(
+      scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void onViewSchedule() {
-    Get.toNamed(AppRoutes.doctorSchedule, arguments: {
-      'doctorId': doctor.doctorId,
-      'isReadOnly': true
-    });
+    Get.toNamed(AppRoutes.doctorSchedule, arguments: {'doctorId': doctor.doctorId, 'isReadOnly': true});
+  }
+
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
   }
 }

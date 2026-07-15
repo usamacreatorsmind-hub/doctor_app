@@ -32,6 +32,7 @@ class AppRoutes {
   static const String addPrescription = '/add-prescription';
   static const String doctorReports    = '/doctor-reports';
   static const String doctorSelfProfile = '/doctor-self-profile';
+  static const String doctorReviews     = '/doctor-reviews';
 
   // Hospital Admin
   static const String hospitalDashboard = '/hospital-dashboard';

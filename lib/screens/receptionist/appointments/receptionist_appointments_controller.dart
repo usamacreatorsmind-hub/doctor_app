@@ -18,6 +18,10 @@ class ReceptionistAppointmentsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Check if a date was passed from the dashboard
+    if (Get.arguments != null && Get.arguments['date'] != null) {
+      selectedDate.value = Get.arguments['date'];
+    }
     _loadAppointments();
   }
 

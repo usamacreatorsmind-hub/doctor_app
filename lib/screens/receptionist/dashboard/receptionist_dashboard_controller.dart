@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../../Repository/auth_repository.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../models/user_model.dart';
+import '../../../models/appointment_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../role_selection/role_selection_controller.dart';
 import 'package:flutter/material.dart';
@@ -16,15 +17,31 @@ class ReceptionistDashboardController extends GetxController {
   final practiceType = 'hospital'.obs;
   final isLoading = false.obs;
 
-  // Stats
+  // Date management
+  final selectedDate = DateTime.now().obs;
+  final dateList = <DateTime>[].obs;
+
+  // Stats & Detailed Data
   final totalPatientsCount = 0.obs;
   final confirmedCount = 0.obs;
   final pendingCount = 0.obs;
+  final allAppointmentsForDate = <AppointmentModel>[].obs;
 
   @override
   void onInit() {
     super.onInit();
+    _generateDates();
     _loadUserData();
+  }
+
+  void _generateDates() {
+    final now = DateTime.now();
+    dateList.assignAll(List.generate(14, (i) => now.add(Duration(days: i))));
+  }
+
+  Future<void> selectDate(DateTime date) async {
+    selectedDate.value = date;
+    await _fetchStatsForDate(date);
   }
 
   Future<void> _loadUserData() async {
@@ -35,8 +52,8 @@ class ReceptionistDashboardController extends GetxController {
         final userData = await _authRepository.getUserData(currentUser.uid);
         user.value = userData;
         if (userData?.hospitalId != null) {
-          _fetchHospitalName(userData!.hospitalId!);
-          await _fetchTodayStats();
+          await _fetchHospitalName(userData!.hospitalId!);
+          await _fetchStatsForDate(selectedDate.value);
         }
       }
     } finally {
@@ -72,20 +89,66 @@ class ReceptionistDashboardController extends GetxController {
     }
   }
 
-  Future<void> _fetchTodayStats() async {
+  Future<void> _fetchStatsForDate(DateTime date) async {
     if (user.value?.hospitalId == null) return;
 
-    final today = DateTime.now().toIso8601String().split('T')[0];
-    final appointments = await _firestoreService.getHospitalAppointments(user.value!.hospitalId!, date: today);
+    final dateStr = date.toIso8601String().split('T')[0];
+    final appointments = await _firestoreService.getHospitalAppointments(user.value!.hospitalId!, date: dateStr);
 
     // Filter by Doctor if assigned
     final filteredAppts = user.value!.doctorId != null
         ? appointments.where((a) => a.doctorId == user.value!.doctorId).toList()
         : appointments;
 
-    totalPatientsCount.value = filteredAppts.length;
-    confirmedCount.value = filteredAppts.where((a) => a.status.toLowerCase() == 'confirmed' || a.status.toLowerCase() == 'arrived').length;
-    pendingCount.value = filteredAppts.where((a) => a.status.toLowerCase() == 'pending').length;
+    // Enhance with names for the bottom sheet
+    List<AppointmentModel> enhancedList = [];
+    for (var appt in filteredAppts) {
+      try {
+        final patientData = await _firestoreService.getUser(appt.patientId);
+        final doctorData = await _firestoreService.getDoctor(appt.doctorId);
+        
+        String patientName = patientData?.name ?? 'Patient';
+        if (!appt.isForSelf && appt.patientDetails != null && appt.patientDetails!['name'] != null) {
+          patientName = appt.patientDetails!['name'];
+        }
+        
+        enhancedList.add(appt.copyWith(
+          patientName: patientName,
+          doctorName: doctorData?.doctorName ?? 'Doctor',
+        ));
+      } catch (e) {
+        enhancedList.add(appt.copyWith(patientName: 'Patient', doctorName: 'Doctor'));
+      }
+    }
+
+    allAppointmentsForDate.assignAll(enhancedList);
+    
+    totalPatientsCount.value = enhancedList.length;
+    confirmedCount.value = enhancedList.where((a) => 
+      a.status.toLowerCase() == 'confirmed' || a.status.toLowerCase() == 'arrived' || a.status.toLowerCase() == 'completed'
+    ).length;
+    pendingCount.value = enhancedList.where((a) => a.status.toLowerCase() == 'pending').length;
+  }
+
+  List<AppointmentModel> getFilteredAppointments(String type) {
+    switch (type) {
+      case 'Total':
+        return allAppointmentsForDate;
+      case 'Confirmed':
+        return allAppointmentsForDate.where((a) => 
+          a.status.toLowerCase() == 'confirmed' || a.status.toLowerCase() == 'arrived' || a.status.toLowerCase() == 'completed'
+        ).toList();
+      case 'Pending':
+        return allAppointmentsForDate.where((a) => a.status.toLowerCase() == 'pending').toList();
+      default:
+        return allAppointmentsForDate;
+    }
+  }
+
+  void goToAppointments() {
+    Get.toNamed(AppRoutes.receptionistAppointments, arguments: {
+      'date': selectedDate.value,
+    });
   }
 
   void signOut() async {

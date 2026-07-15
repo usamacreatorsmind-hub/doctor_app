@@ -28,7 +28,6 @@ class SlotSelectionController extends GetxController {
     } else {
       Get.back();
       AppSnackBar.show('Doctor details not found');
-
     }
   }
 
@@ -54,7 +53,7 @@ class SlotSelectionController extends GetxController {
   Future<void> _generateAvailableSlots() async {
     availableTimeSlots.clear();
     selectedTimeSlot.value = null;
-    
+
     if (selectedDate.value == null || doctorSchedules.isEmpty) {
       update();
       return;
@@ -63,9 +62,7 @@ class SlotSelectionController extends GetxController {
     final todayStr = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
     final dayOfWeek = DateFormat('EEEE').format(selectedDate.value!);
 
-    final scheduleForSelectedDay = doctorSchedules.firstWhereOrNull(
-      (s) => s.day.toLowerCase() == dayOfWeek.toLowerCase(),
-    );
+    final scheduleForSelectedDay = doctorSchedules.firstWhereOrNull((s) => s.day.toLowerCase() == dayOfWeek.toLowerCase());
 
     if (scheduleForSelectedDay == null) {
       update();
@@ -75,16 +72,20 @@ class SlotSelectionController extends GetxController {
     try {
       final bookedSlots = await _firestoreService.getBookedSlots(doctor.doctorId, todayStr);
 
-      DateTime startTime = DateFormat('HH:mm').parse(scheduleForSelectedDay.startTime);
-      DateTime endTime = DateFormat('HH:mm').parse(scheduleForSelectedDay.endTime);
-      final slotDuration = scheduleForSelectedDay.slotDurationMins;
+      final allSlots24 = scheduleForSelectedDay.generateSlots(forDate: selectedDate.value);
+      final allSlots12 = allSlots24.map((s24) {
+        try {
+          final time = DateFormat('HH:mm').parse(s24);
+          return DateFormat('hh:mm a').format(time);
+        } catch (e) {
+          return s24;
+        }
+      }).toList();
 
-      while (startTime.isBefore(endTime)) {
-        final slot = DateFormat('hh:mm a').format(startTime);
+      for (var slot in allSlots12) {
         if (!bookedSlots.contains(slot)) {
           availableTimeSlots.add(slot);
         }
-        startTime = startTime.add(Duration(minutes: slotDuration));
       }
     } catch (e) {
       print("Error generating slots: $e");
@@ -103,10 +104,13 @@ class SlotSelectionController extends GetxController {
       AppSnackBar.show('Please select a date and time slot.');
       return;
     }
-    Get.toNamed(AppRoutes.bookingConfirm, arguments: {
-      'doctor': doctor,
-      'selectedDate': selectedDate.value!.toIso8601String().split('T')[0],
-      'selectedTimeSlot': selectedTimeSlot.value,
-    });
+    Get.toNamed(
+      AppRoutes.bookingConfirm,
+      arguments: {
+        'doctor': doctor,
+        'selectedDate': selectedDate.value!.toIso8601String().split('T')[0],
+        'selectedTimeSlot': selectedTimeSlot.value,
+      },
+    );
   }
 }

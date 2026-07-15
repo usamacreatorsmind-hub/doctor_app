@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import '../../../models/appointment_model.dart';
+import '../../../utils/helper.dart';
 import 'receptionist_dashboard_controller.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
@@ -25,6 +28,8 @@ class ReceptionistDashboardScreen extends GetView<ReceptionistDashboardControlle
                 delegate: SliverChildListDelegate([
                   _buildHospitalInfo(),
                   const SizedBox(height: 24),
+                  _buildDateSelector(),
+                  const SizedBox(height: 24),
                   const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Row(
@@ -37,7 +42,7 @@ class ReceptionistDashboardScreen extends GetView<ReceptionistDashboardControlle
                           icon: Icons.calendar_month_rounded,
                           color: const Color(0xFFE3F2FD),
                           iconColor: AppColors.primary,
-                          onTap: () => Get.toNamed(AppRoutes.receptionistAppointments),
+                          onTap: controller.goToAppointments,
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -192,39 +197,245 @@ class ReceptionistDashboardScreen extends GetView<ReceptionistDashboardControlle
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Today\'s Status', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Obx(
+          () => Text(
+            'Status for ${DateFormat('dd MMM').format(controller.selectedDate.value)}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
         const SizedBox(height: 12),
         Obx(
-          () => _buildStatusItem(Icons.people_alt_rounded, 'Total Patients', controller.totalPatientsCount.value.toString(), Colors.blue),
+          () => _buildStatusItem(
+            Icons.people_alt_rounded,
+            'Total Patients',
+            controller.totalPatientsCount.value.toString(),
+            Colors.blue,
+            onTap: () => _showAppointmentsBottomSheet('Total Patients', controller.getFilteredAppointments('Total')),
+          ),
         ),
         Obx(
-          () => _buildStatusItem(Icons.check_circle_rounded, 'Confirmed Appts', controller.confirmedCount.value.toString(), Colors.green),
+          () => _buildStatusItem(
+            Icons.check_circle_rounded,
+            'Confirmed Appts',
+            controller.confirmedCount.value.toString(),
+            Colors.green,
+            onTap: () => _showAppointmentsBottomSheet('Confirmed Appointments', controller.getFilteredAppointments('Confirmed')),
+          ),
         ),
-        Obx(() => _buildStatusItem(Icons.pending_actions_rounded, 'Pending', controller.pendingCount.value.toString(), Colors.orange)),
+        Obx(
+          () => _buildStatusItem(
+            Icons.pending_actions_rounded,
+            'Pending Appts',
+            controller.pendingCount.value.toString(),
+            Colors.orange,
+            onTap: () => _showAppointmentsBottomSheet('Pending Appointments', controller.getFilteredAppointments('Pending')),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildStatusItem(IconData icon, String label, String value, Color color) {
+  void _showAppointmentsBottomSheet(String title, List<AppointmentModel> list) {
+    if (list.isEmpty) {
+      AppSnackBar.show('No appointments found for this category.');
+      return;
+    }
+
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(maxHeight: Get.height * 0.8),
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  '${list.length} Records',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const Divider(height: 32),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final appt = list[index];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgPage,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.primarySurface,
+                          child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(appt.patientName ?? 'Patient', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  const Icon(Icons.access_time_rounded, size: 12, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Text(appt.timeSlot, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                  const SizedBox(width: 12),
+                                  const Icon(Icons.medical_services_outlined, size: 12, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      'Dr. ${appt.doctorName}',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        _buildBottomSheetStatusBadge(appt.status),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildBottomSheetStatusBadge(String status) {
+    Color color = Colors.orange;
+    if (status.toLowerCase() == 'confirmed' || status.toLowerCase() == 'arrived' || status.toLowerCase() == 'completed')
+      color = Colors.green;
+    if (status.toLowerCase() == 'cancelled') color = Colors.red;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(
+        status,
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildDateSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Manage Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 85,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: controller.dateList.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final date = controller.dateList[index];
+              return Obx(() {
+                final isSelected =
+                    controller.selectedDate.value.year == date.year &&
+                    controller.selectedDate.value.month == date.month &&
+                    controller.selectedDate.value.day == date.day;
+                return GestureDetector(
+                  onTap: () => controller.selectDate(date),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 60,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder, width: isSelected ? 1.5 : 1),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          DateFormat('EEE').format(date),
+                          style: TextStyle(color: isSelected ? Colors.white70 : AppColors.textSecondary, fontSize: 11),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          date.day.toString(),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusItem(IconData icon, String label, String value, Color color, {VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primaryBorder.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.primaryBorder.withOpacity(0.3)),
           ),
-        ],
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 12),
+              Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              const Spacer(),
+              Text(
+                value,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey.shade300),
+            ],
+          ),
+        ),
       ),
     );
   }

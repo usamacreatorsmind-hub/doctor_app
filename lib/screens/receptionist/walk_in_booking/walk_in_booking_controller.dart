@@ -168,7 +168,7 @@ class WalkInBookingController extends GetxController {
         final todaysSchedule = schedules.firstWhereOrNull((s) => s.day.toLowerCase() == dayOfWeek.toLowerCase());
 
         if (todaysSchedule != null) {
-          final allSlots24 = todaysSchedule.generateSlots();
+          final allSlots24 = todaysSchedule.generateSlots(forDate: selectedDate.value);
           final allSlots12 = allSlots24.map((s24) {
             try {
               final time = DateFormat('HH:mm').parse(s24);
