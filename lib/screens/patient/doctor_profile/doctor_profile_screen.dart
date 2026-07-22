@@ -95,14 +95,6 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(20)),
-              child: Text(
-                controller.doctor.consultationMode,
-                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 8),

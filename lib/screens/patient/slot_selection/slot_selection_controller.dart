@@ -4,7 +4,6 @@ import '../../../models/doctor_schedule_model.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
 import 'package:intl/intl.dart';
-
 import '../../../utils/helper.dart';
 
 class SlotSelectionController extends GetxController {

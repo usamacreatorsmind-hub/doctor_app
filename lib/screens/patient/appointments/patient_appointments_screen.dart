@@ -115,7 +115,11 @@ class PatientAppointmentsScreen extends GetView<PatientAppointmentsController> {
   }
 
   void _showReviewDialog(BuildContext context, AppointmentModel appt) async {
-    final result = await Get.dialog(ReviewDialog(appointment: appt));
+    final result = await Get.bottomSheet(
+      SafeArea(child: ReviewBottomSheet(appointment: appt)),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
     if (result == true) {
       controller.loadAppointments();
     }
@@ -230,7 +234,6 @@ class _AppointmentCard extends StatelessWidget {
       ],
     );
   }
-
   Widget _statusBadge(String status) {
     Color bg = Colors.grey.shade100;
     Color text = Colors.grey;

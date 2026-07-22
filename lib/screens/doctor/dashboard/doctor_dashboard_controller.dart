@@ -15,6 +15,7 @@ import '../../role_selection/role_selection_controller.dart';
 
 class DoctorDashboardController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
+  FirestoreService get firestoreService => _firestoreService;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AuthRepository _authRepository = AuthRepository();
   

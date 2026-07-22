@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../models/user_model.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
 import '../../../utils/app_routes.dart';
 import '../../../models/appointment_model.dart';
 import 'doctor_dashboard_controller.dart';
@@ -246,9 +246,7 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.info_outline_rounded, color: AppColors.primary),
-                        onPressed: () {
-                          // Could go to patient records screen
-                        },
+                        onPressed: () => _showPatientDetails(context, patient),
                       ),
                     ],
                   ),
@@ -779,6 +777,104 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
           ),
         );
       },
+    );
+  }
+
+  void _showPatientDetails(BuildContext context, UserModel patient) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Patient Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.close)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: AppColors.primarySurface,
+                      child: Text(
+                        patient.name[0].toUpperCase(),
+                        style: const TextStyle(color: AppColors.primary, fontSize: 32, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(patient.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('ID: ${patient.patientId ?? "N/A"}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              _detailItem(Icons.phone_android_rounded, 'Mobile Number', patient.mobile),
+              _detailItem(Icons.email_outlined, 'Email Address', patient.email),
+              const Divider(height: 32),
+              FutureBuilder(
+                future: controller.firestoreService.getPatientProfile(patient.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return const Text('Profile details not found', style: TextStyle(color: AppColors.textHint));
+                  }
+                  final profile = snapshot.data!;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: _detailItem(Icons.cake_outlined, 'DOB', profile.dob ?? 'N/A')),
+                          Expanded(child: _detailItem(Icons.person_outline, 'Gender', profile.gender ?? 'N/A')),
+                        ],
+                      ),
+                      _detailItem(Icons.water_drop_outlined, 'Blood Group', profile.bloodGroup ?? 'N/A'),
+                      _detailItem(
+                        Icons.location_on_outlined,
+                        'Address',
+                        '${profile.address ?? ""}\n${profile.city ?? ""}, ${profile.state ?? ""} - ${profile.pincode ?? ""}',
+                      ),
+                      if (profile.medicalHistory.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        const Text('Medical History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: profile.medicalHistory
+                              .map(
+                                (item) => Chip(
+                                  label: Text(item, style: const TextStyle(fontSize: 12)),
+                                  backgroundColor: AppColors.bgPage,
+                                  side: BorderSide.none,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 
