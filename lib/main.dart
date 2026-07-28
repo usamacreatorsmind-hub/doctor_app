@@ -22,8 +22,6 @@ void main() async {
   }
 }
 
-
-
 class DoctorAppointmentApp extends StatelessWidget {
   const DoctorAppointmentApp({super.key});
 

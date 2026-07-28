@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/app_images.dart';
 import 'splash_controller.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -26,7 +27,7 @@ class SplashScreen extends StatelessWidget {
                   const SizedBox(height: 28),
 
                   // ── App Name & Tagline ──
-                  const Text('MediBook', style: AppTextStyles.heading1),
+                  const Text('AyuVeda Care', style: AppTextStyles.heading1),
                   const SizedBox(height: 8),
                   const Text('YOUR HEALTH, OUR PRIORITY', style: AppTextStyles.subtitle),
 
@@ -61,8 +62,13 @@ class _LogoWidget extends StatelessWidget {
             shape: BoxShape.circle,
             color: Colors.white.withOpacity(0.25),
           ),
-          child: const Center(
-            child: Icon(Icons.favorite_rounded, size: 42, color: Colors.white),
+          child: ClipOval(
+            child: Image.asset(
+              AppImages.appLogo,
+              fit: BoxFit.cover,
+              width: 88,
+              height: 88,
+            ),
           ),
         ),
       ),

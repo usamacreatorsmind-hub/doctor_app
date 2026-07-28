@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/app_images.dart';
 import 'role_selection_controller.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -94,7 +95,14 @@ class RoleSelectionScreen extends StatelessWidget {
             width: 70,
             height: 70,
             decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.18)),
-            child: const Icon(Icons.favorite_rounded, size: 34, color: Colors.white),
+            child: ClipOval(
+              child: Image.asset(
+                AppImages.appLogo,
+                fit: BoxFit.cover,
+                width: 70,
+                height: 70,
+              ),
+            ),
           ),
           const SizedBox(height: 18),
           const Text('Who are you?', style: AppTextStyles.heading2),

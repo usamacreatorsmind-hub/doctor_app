@@ -8,6 +8,7 @@ import '../../../models/doctor_model.dart';
 import '../../../models/hospital_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
+import '../../Login/login_controller.dart';
 
 class DoctorRegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -240,7 +241,7 @@ class DoctorRegisterController extends GetxController {
           AppSnackBar.show('Registration successful! Your clinic profile is ready.');
         }
 
-        Get.offAllNamed(AppRoutes.login);
+        Get.offAllNamed(AppRoutes.login, arguments: {'role': LoginRole.doctor});
       }
     } catch (e) {
       AppSnackBar.show(e.toString());

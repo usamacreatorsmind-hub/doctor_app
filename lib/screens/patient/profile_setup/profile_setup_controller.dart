@@ -6,14 +6,15 @@ import '../../../models/user_model.dart';
 import '../../../utils/app_routes.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/helper.dart';
+import '../../Login/login_controller.dart';
 
 class ProfileSetupController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final currentStep = 0.obs;
-  final isLoading   = false.obs;
-  final isSaving    = false.obs;
+  final isLoading = false.obs;
+  final isSaving = false.obs;
 
   // Form Keys
   final step1FormKey = GlobalKey<FormState>();
@@ -21,45 +22,45 @@ class ProfileSetupController extends GetxController {
   final step3FormKey = GlobalKey<FormState>();
 
   // Step 1 Controllers
-  final nameController      = TextEditingController();
-  final mobileController    = TextEditingController();
-  final dobController       = TextEditingController();
-  final addressController   = TextEditingController();
-  final cityController      = TextEditingController();
-  final stateController     = TextEditingController();
-  final pincodeController   = TextEditingController();
+  final nameController = TextEditingController();
+  final mobileController = TextEditingController();
+  final dobController = TextEditingController();
+  final addressController = TextEditingController();
+  final cityController = TextEditingController();
+  final stateController = TextEditingController();
+  final pincodeController = TextEditingController();
 
-  final selectedGender     = ''.obs;
+  final selectedGender = ''.obs;
   final selectedBloodGroup = ''.obs;
-  final profilePhotoPath   = ''.obs;
+  final profilePhotoPath = ''.obs;
 
-  final genders     = ['Male', 'Female', 'Other'];
+  final genders = ['Male', 'Female', 'Other'];
   final bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
   // Step 2 Controllers
-  final medicalHistoryController   = TextEditingController();
-  final medicationController       = TextEditingController();
-  final allergyController          = TextEditingController();
+  final medicalHistoryController = TextEditingController();
+  final medicationController = TextEditingController();
+  final allergyController = TextEditingController();
 
-  final medicalHistoryList   = <String>[].obs;
-  final currentMedications   = <String>[].obs;
-  final allergiesList        = <String>[].obs;
+  final medicalHistoryList = <String>[].obs;
+  final currentMedications = <String>[].obs;
+  final allergiesList = <String>[].obs;
 
   final commonDiseases = ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'Thyroid', 'Arthritis', 'Anemia', 'None'];
   final commonAllergies = ['Penicillin', 'Aspirin', 'Sulfa Drugs', 'Latex', 'Dust', 'Pollen', 'Nuts', 'None'];
 
   // Step 3 Controllers
-  final emergencyNameController     = TextEditingController();
-  final emergencyNumberController   = TextEditingController();
+  final emergencyNameController = TextEditingController();
+  final emergencyNumberController = TextEditingController();
   final insuranceProviderController = TextEditingController();
-  final insurancePolicyController   = TextEditingController();
+  final insurancePolicyController = TextEditingController();
 
   final selectedRelation = ''.obs;
   final relations = ['Father', 'Mother', 'Spouse', 'Sibling', 'Friend', 'Other'];
 
   final steps = [
-    {'title': 'Personal',  'subtitle': 'Basic info'},
-    {'title': 'Medical',   'subtitle': 'Health info'},
+    {'title': 'Personal', 'subtitle': 'Basic info'},
+    {'title': 'Medical', 'subtitle': 'Health info'},
     {'title': 'Emergency', 'subtitle': 'Contact & Insurance'},
   ];
 
@@ -112,7 +113,7 @@ class ProfileSetupController extends GetxController {
         cityController.text = profile.city ?? '';
         stateController.text = profile.state ?? '';
         pincodeController.text = profile.pincode ?? '';
-        
+
         // Gender Auto-fill with Casing Logic
         if (profile.gender != null && profile.gender!.isNotEmpty) {
           String g = profile.gender!.trim().toLowerCase();
@@ -137,7 +138,7 @@ class ProfileSetupController extends GetxController {
           String bg = profile.bloodGroup!.trim().toUpperCase();
           if (bg.contains('POSITIVE')) bg = bg.replaceAll('POSITIVE', '+').replaceAll(' ', '');
           if (bg.contains('NEGATIVE')) bg = bg.replaceAll('NEGATIVE', '-').replaceAll(' ', '');
-          
+
           if (bloodGroups.contains(bg)) {
             selectedBloodGroup.value = bg;
           }
@@ -163,9 +164,20 @@ class ProfileSetupController extends GetxController {
     }
   }
 
-  void selectGender(String gender) { selectedGender.value = gender; update(); }
-  void selectBloodGroup(String bg) { selectedBloodGroup.value = bg; update(); }
-  void selectRelation(String relation) { selectedRelation.value = relation; update(); }
+  void selectGender(String gender) {
+    selectedGender.value = gender;
+    update();
+  }
+
+  void selectBloodGroup(String bg) {
+    selectedBloodGroup.value = bg;
+    update();
+  }
+
+  void selectRelation(String relation) {
+    selectedRelation.value = relation;
+    update();
+  }
 
   Future<void> pickDob(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -288,10 +300,7 @@ class ProfileSetupController extends GetxController {
     update();
     try {
       // 1. Update basic user info in users collection
-      await _firestoreService.updateUser(user.uid, {
-        'name': nameController.text.trim(),
-        'mobile': mobileController.text.trim(),
-      });
+      await _firestoreService.updateUser(user.uid, {'name': nameController.text.trim(), 'mobile': mobileController.text.trim()});
 
       // 2. Save profile in profile collection
       final profile = PatientProfileModel(
@@ -312,10 +321,10 @@ class ProfileSetupController extends GetxController {
         insurancePolicyNumber: insurancePolicyController.text,
         isProfileComplete: true,
       );
-      
+
       await _firestoreService.savePatientProfile(user.uid, profile);
       AppSnackBar.show('Profile updated successfully');
-      Get.offAllNamed(AppRoutes.patientDashboard);
+      Get.offAllNamed(AppRoutes.login, arguments: {'role': LoginRole.patient});
     } catch (e) {
       AppSnackBar.show('Failed to save profile: $e');
     } finally {

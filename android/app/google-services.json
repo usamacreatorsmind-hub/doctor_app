@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "655863270380",
-    "project_id": "doctorapp-53f33",
-    "storage_bucket": "doctorapp-53f33.firebasestorage.app"
+    "project_number": "1070683249385",
+    "project_id": "ayuveda-care-42292",
+    "storage_bucket": "ayuveda-care-42292.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:655863270380:android:04f1d1aaf9f9da37674ec9",
+        "mobilesdk_app_id": "1:1070683249385:android:3c07d50270501dff6f6e78",
         "android_client_info": {
-          "package_name": "com.creators.doctor_app"
+          "package_name": "com.ayuvedacare.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCICicvST9f-JSS001lWWnEMEmmy5ndfyg"
+          "current_key": "AIzaSyDtuTK3rNu2OAMlDgqrvXbP99rB-9JB2bw"
         }
       ],
       "services": {

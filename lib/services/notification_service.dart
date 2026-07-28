@@ -32,7 +32,7 @@ class NotificationService extends GetxService {
       _messaging.onTokenRefresh.listen((newToken) {
         _saveTokenToFirestore(newToken);
       });
-      const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('ic_launcher');
+      const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('ic_notification');
 
       const DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -101,7 +101,7 @@ class NotificationService extends GetxService {
             'High Importance Notifications',
             importance: Importance.max,
             priority: Priority.high,
-            icon: android?.smallIcon ?? 'ic_launcher',
+            icon: android?.smallIcon ?? 'ic_notification',
           ),
           iOS: const DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
         ),

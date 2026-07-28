@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/app_routes.dart';
+import '../../utils/app_images.dart';
 import 'login_controller.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -12,9 +13,15 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<LoginController>(
       builder: (controller) {
-        return Scaffold(
-          backgroundColor: AppColors.bgPage,
-          body: SafeArea(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            Get.offAllNamed(AppRoutes.roleSelection);
+          },
+          child: Scaffold(
+            backgroundColor: AppColors.bgPage,
+            body: SafeArea(
             top: false,
             child: SingleChildScrollView(
               child: Column(
@@ -52,7 +59,7 @@ class LoginScreen extends StatelessWidget {
               ),
             ),
           ),
-        );
+        ));
       },
     );
   }
@@ -88,7 +95,14 @@ class LoginScreen extends StatelessWidget {
             width: 66,
             height: 66,
             decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.18)),
-            child: const Icon(Icons.favorite_rounded, size: 35, color: Colors.white),
+            child: ClipOval(
+              child: Image.asset(
+                AppImages.appLogo,
+                fit: BoxFit.cover,
+                width: 66,
+                height: 66,
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           Text('Login as $roleName', style: AppTextStyles.heading2),

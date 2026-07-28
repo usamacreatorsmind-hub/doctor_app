@@ -3,7 +3,7 @@
     <!-- Android 13+ ke liye notifications permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="Doctor App"
+        android:label="AyuVeda Care"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -29,7 +29,7 @@
             android:value="high_importance_channel" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_notification" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

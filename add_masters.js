@@ -9,15 +9,21 @@
  * ============================================================
  */
 
-const admin = require("firebase-admin");
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const serviceAccount = require("./serviceAccountKey.json");
 
 try {
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-} catch (e) {}
+  initializeApp({
+    credential: cert(serviceAccount)
+  });
+} catch (e) {
+  // Already initialized
+}
 
-const db  = admin.firestore();
-const now = admin.firestore.Timestamp.now();
+const db = getFirestore();
+const now = Timestamp.now();
+
 
 // ============================================================
 //  qualification_master
