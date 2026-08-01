@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 import 'patient_profile_controller.dart';
 
 class PatientProfileScreen extends GetView<PatientProfileController> {
@@ -76,6 +77,12 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
               _buildInfoSection('Address', [
                 _infoRow(Icons.location_on_outlined, 'Address', profile?.address ?? 'Not set'),
                 _infoRow(Icons.location_city_rounded, 'City', '${profile?.city ?? ""}, ${profile?.state ?? ""}'),
+              ]),
+
+              const SizedBox(height: 24),
+              _buildInfoSection('Legal', [
+                _actionRow(Icons.privacy_tip_outlined, 'Privacy Policy', LauncherHelper.launchPrivacyPolicy),
+                _actionRow(Icons.description_outlined, 'Terms & Conditions', LauncherHelper.launchTermsConditions),
               ]),
 
               const SizedBox(height: 32),
@@ -183,6 +190,24 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
           const Spacer(),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
         ],
+      ),
+    );
+  }
+
+  Widget _actionRow(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: AppColors.textSecondary),
+            const SizedBox(width: 12),
+            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textHint),
+          ],
+        ),
       ),
     );
   }

@@ -132,10 +132,33 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           scrollDirection: Axis.horizontal,
-          itemCount: controller.specializations.length,
+          itemCount: controller.specializations.length + 1,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
-            final spec = controller.specializations[index];
+            if (index == 0) {
+              return Obx(() {
+                final isSelected = controller.selectedSpecialization.value == '';
+                return FilterChip(
+                  label: const Text('All Doctors'),
+                  selected: isSelected,
+                  onSelected: (_) => controller.clearFilters(),
+                  selectedColor: AppColors.primary,
+                  checkmarkColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
+                  ),
+                );
+              });
+            }
+
+            final spec = controller.specializations[index - 1];
             return Obx(() {
               final isSelected = controller.selectedSpecialization.value == spec;
               return FilterChip(

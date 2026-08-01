@@ -408,6 +408,27 @@ class FirestoreService {
     }
   }
 
+  Future<List<String>> getUsedSpecializations() async {
+    try {
+      final doctorsSnap = await _doctors.where('status', isEqualTo: 'active').get();
+      final specs = <String>{};
+      for (var doc in doctorsSnap.docs) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) continue;
+        final spec = data['specialization'];
+        if (spec is List) {
+          specs.addAll(spec.map((e) => e.toString()).where((e) => e.isNotEmpty));
+        } else if (spec is String && spec.isNotEmpty) {
+          specs.add(spec);
+        }
+      }
+      return specs.toList()..sort();
+    } catch (e) {
+      print("Firestore Error (getUsedSpecializations): $e");
+      return [];
+    }
+  }
+
   Future<List<String>> getQualifications() async {
     try {
       var snap = await _qualificationMaster.where('status', isEqualTo: 'active').get();

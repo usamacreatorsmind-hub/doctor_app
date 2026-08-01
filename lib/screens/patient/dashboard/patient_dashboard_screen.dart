@@ -328,13 +328,40 @@ class PatientDashboardScreen extends StatelessWidget {
           child: Obx(
             () => ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: controller.specializations.length,
+              itemCount: controller.specializations.length + 1,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
-                final spec = controller.specializations[index];
-                final bool isActive = controller.selectedSpecIndex.value == index;
+                if (index == 0) {
+                  final bool isActive = controller.selectedSpecIndex.value == -1;
+                  return GestureDetector(
+                    onTap: () {
+                      controller.selectedSpecIndex.value = -1;
+                      controller.onSeeAllDoctors();
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isActive ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isActive ? AppColors.primary : AppColors.primaryBorder, width: 1),
+                      ),
+                      child: Text(
+                        'All',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isActive ? Colors.white : AppColors.textPrimary),
+                      ),
+                    ),
+                  );
+                }
+
+                final spec = controller.specializations[index - 1];
+                final bool isActive = controller.selectedSpecIndex.value == index - 1;
                 return GestureDetector(
-                  onTap: () => controller.onSpecializationTapped(index),
+                  onTap: () => controller.onSpecializationTapped(index - 1),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -346,7 +373,10 @@ class PatientDashboardScreen extends StatelessWidget {
                     ),
                     child: Text(
                       spec,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isActive ? Colors.white : AppColors.textPrimary),
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isActive ? Colors.white : AppColors.textPrimary),
                     ),
                   ),
                 );

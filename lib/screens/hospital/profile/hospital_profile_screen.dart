@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 import 'hospital_profile_controller.dart';
 
 class HospitalProfileScreen extends GetView<HospitalProfileController> {
@@ -159,6 +160,21 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                           'active',
                           'inactive',
                         ]),
+                      ],
+                    ),
+                    _buildSectionCard(
+                      title: 'Legal & Policies',
+                      children: [
+                        _buildLegalTile(
+                          'Privacy Policy',
+                          Icons.privacy_tip_outlined,
+                          LauncherHelper.launchPrivacyPolicy,
+                        ),
+                        _buildLegalTile(
+                          'Terms & Conditions',
+                          Icons.description_outlined,
+                          LauncherHelper.launchTermsConditions,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -459,6 +475,20 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
           contentPadding: EdgeInsets.zero,
         ),
       ),
+    );
+  }
+
+  Widget _buildLegalTile(String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(8)),
+        child: Icon(icon, color: AppColors.primary, size: 20),
+      ),
+      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
     );
   }
 

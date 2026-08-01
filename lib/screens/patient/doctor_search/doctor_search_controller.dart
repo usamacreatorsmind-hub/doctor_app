@@ -60,7 +60,7 @@ class DoctorSearchController extends GetxController {
 
   Future<void> loadMasterData() async {
     try {
-      final specs = await _firestoreService.getSpecializations();
+      final specs = await _firestoreService.getUsedSpecializations();
       final symps = await _firestoreService.getSymptoms();
       final diss = await _firestoreService.getDiseases();
 

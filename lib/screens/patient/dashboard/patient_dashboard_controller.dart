@@ -5,6 +5,7 @@ import '../../../models/doctor_model.dart';
 import '../../../models/appointment_model.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
+import '../doctor_search/doctor_search_controller.dart';
 
 class PatientDashboardController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -12,7 +13,7 @@ class PatientDashboardController extends GetxController {
 
   final isLoading = false.obs;
   final selectedIndex = 0.obs;
-  final selectedSpecIndex = 0.obs;
+  final selectedSpecIndex = (-1).obs;
   final patientName = 'Patient'.obs;
   final specializations = <String>[].obs;
 
@@ -39,11 +40,10 @@ class PatientDashboardController extends GetxController {
 
       final profile = await _firestoreService.getPatientProfile(user.uid);
       if (profile != null) {
-        bloodGroup.value = (profile.bloodGroup != null && profile.bloodGroup!.isNotEmpty)
-            ? profile.bloodGroup! : 'N/A';
+        bloodGroup.value = (profile.bloodGroup != null && profile.bloodGroup!.isNotEmpty) ? profile.bloodGroup! : 'N/A';
       }
 
-      final specs = await _firestoreService.getSpecializations();
+      final specs = await _firestoreService.getUsedSpecializations();
       if (specs.isNotEmpty) specializations.assignAll(specs);
 
       final doctors = await _firestoreService.getTopDoctors(limit: 5);
@@ -53,7 +53,7 @@ class PatientDashboardController extends GetxController {
       if (appointments.isNotEmpty) {
         // Strict filtering for Dashboard: Only Today or Future
         final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        
+
         final upcomingList = appointments.where((a) {
           final isActive = a.status != 'Cancelled' && a.status != 'Completed';
           // Ensure appointment date is >= today
@@ -64,10 +64,10 @@ class PatientDashboardController extends GetxController {
         if (upcomingList.isNotEmpty) {
           upcomingList.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
           final rawAppt = upcomingList.first;
-          
+
           final doctorData = await _firestoreService.getDoctor(rawAppt.doctorId);
           final hospitalData = await _firestoreService.getHospital(rawAppt.hospitalId);
-          
+
           upcomingAppointment.value = rawAppt.copyWith(
             doctorName: doctorData?.doctorName ?? 'Doctor',
             specialization: doctorData?.specialization.join(', ') ?? 'Specialist',
@@ -88,18 +88,37 @@ class PatientDashboardController extends GetxController {
   void onSpecializationTapped(int index) {
     selectedSpecIndex.value = index;
     update();
+
+    final spec = specializations[index];
+    try {
+      final searchCtrl = Get.find<DoctorSearchController>();
+      searchCtrl.onSpecializationFilter(spec);
+    } catch (e) {
+      // If controller not found, it will handle it via arguments in next step
+    }
+
     changeTab(1); // Switch to Search Tab
-    // Get.toNamed(AppRoutes.doctorSearch, arguments: {'specialization': specializations[index]});
   }
 
   void changeTab(int index) {
     selectedIndex.value = index;
+    if (index != 1) {
+      selectedSpecIndex.value = -1;
+    }
     update();
   }
 
   void onDoctorBookTapped(DoctorModel doctor) => Get.toNamed(AppRoutes.doctorProfile, arguments: {'doctor': doctor});
   void onViewAllAppointments() => changeTab(2); // Switch to History Tab
-  void onSeeAllDoctors() => changeTab(1); // Switch to Book Tab
+  void onSeeAllDoctors() {
+    selectedSpecIndex.value = -1;
+    try {
+      final searchCtrl = Get.find<DoctorSearchController>();
+      searchCtrl.clearFilters();
+    } catch (e) {}
+    changeTab(1); // Switch to Book Tab
+  }
+
   void onSearchTapped() => changeTab(1); // Switch to Book Tab
   void onNotificationTapped() => Get.toNamed(AppRoutes.notifications);
   void onProfileTapped() => changeTab(3); // Switch to Profile Tab

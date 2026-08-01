@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 import 'doctor_self_profile_controller.dart';
 
 class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
@@ -168,6 +169,27 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
           child: Text(profile.biography ?? 'No biography added', style: const TextStyle(color: AppColors.textSecondary, height: 1.5)),
+        ),
+
+        const SizedBox(height: 24),
+        const Text('Legal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        _clickableInfoTile(Icons.privacy_tip_outlined, 'Privacy Policy', 'View privacy practices', LauncherHelper.launchPrivacyPolicy),
+        _clickableInfoTile(Icons.description_outlined, 'Terms & Conditions', 'View terms of use', LauncherHelper.launchTermsConditions),
+
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: controller.signOut,
+            icon: const Icon(Icons.logout_rounded, color: Colors.red),
+            label: const Text('Logout', style: TextStyle(color: Colors.red)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.red),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
       ],
     );
@@ -448,6 +470,33 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _clickableInfoTile(IconData icon, String label, String value, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              ],
+            ),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
+          ],
+        ),
       ),
     );
   }

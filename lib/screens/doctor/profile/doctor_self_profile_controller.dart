@@ -7,12 +7,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../Repository/FirestoreService.dart';
+import '../../../Repository/auth_repository.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/hospital_model.dart';
+import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
 
 class DoctorSelfProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
+  final AuthRepository _authRepository = AuthRepository();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
@@ -278,5 +281,24 @@ class DoctorSelfProfileController extends GetxController {
       isLoading.value = false;
       update();
     }
+  }
+
+  Future<void> signOut() async {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              await _authRepository.signOut();
+              Get.offAllNamed(AppRoutes.login);
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

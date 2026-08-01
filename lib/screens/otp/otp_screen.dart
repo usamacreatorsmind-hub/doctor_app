@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:pinput/pinput.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import 'otp_controller.dart';
@@ -98,7 +99,7 @@ class OtpVerificationScreen extends StatelessWidget {
           Container(
             width: 66,
             height: 66,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.18)),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.18)),
             child: const Icon(Icons.phone_android_rounded, size: 30, color: Colors.white),
           ),
           const SizedBox(height: 14),
@@ -135,17 +136,40 @@ class OtpVerificationScreen extends StatelessWidget {
   }
 
   Widget _buildOtpBoxes(OtpController controller) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(6, (index) {
-        // Changed 4 to 6
-        return _OtpBox(
-          controller: controller.otpControllers[index],
-          focusNode: controller.focusNodes[index],
-          onChanged: (val) => controller.onDigitEntered(index, val),
-          onBackspace: () => controller.onBackspace(index),
-        );
-      }),
+    final defaultPinTheme = PinTheme(
+      width: 48,
+      height: 60,
+      textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary),
+      decoration: BoxDecoration(
+        color: AppColors.bgWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryBorder, width: 1.5),
+      ),
+    );
+
+    final focusedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(border: Border.all(color: AppColors.primary, width: 2.5)),
+    );
+
+    final submittedPinTheme = defaultPinTheme.copyWith(
+      decoration: defaultPinTheme.decoration!.copyWith(
+        color: AppColors.primarySurface,
+        border: Border.all(color: AppColors.primary, width: 1.5),
+      ),
+    );
+
+    return Center(
+      child: Pinput(
+        length: 6,
+        controller: controller.otpController,
+        focusNode: controller.focusNode,
+        defaultPinTheme: defaultPinTheme,
+        focusedPinTheme: focusedPinTheme,
+        submittedPinTheme: submittedPinTheme,
+        onChanged: (val) => controller.enteredOtp.value = val,
+        onCompleted: (pin) => controller.verifyOtp(pin),
+        hapticFeedbackType: HapticFeedbackType.lightImpact,
+      ),
     );
   }
 
@@ -190,7 +214,7 @@ class OtpVerificationScreen extends StatelessWidget {
         width: double.infinity,
         height: 52,
         child: ElevatedButton(
-          onPressed: controller.isOtpComplete && !controller.isLoading.value ? controller.verifyOtp : null,
+          onPressed: controller.isOtpComplete && !controller.isLoading.value ? () => controller.verifyOtp() : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -205,55 +229,10 @@ class OtpVerificationScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.check_circle_rounded, size: 20),
                     SizedBox(width: 8),
-                    const Text('Verify OTP', style: AppTextStyles.btnPrimary),
+                    Text('Verify OTP', style: AppTextStyles.btnPrimary),
                   ],
                 ),
         ),
-      ),
-    );
-  }
-}
-
-class _OtpBox extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onBackspace;
-
-  const _OtpBox({required this.controller, required this.focusNode, required this.onChanged, required this.onBackspace});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48, // Reduced width slightly to fit 6 boxes
-      height: 60,
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary),
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor: controller.text.isNotEmpty ? AppColors.primarySurface : AppColors.bgWhite,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: controller.text.isNotEmpty ? AppColors.primary : AppColors.primaryBorder, width: 1.5),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: controller.text.isNotEmpty ? AppColors.primary : AppColors.primaryBorder, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2.5),
-          ),
-          contentPadding: EdgeInsets.zero,
-        ),
-        onChanged: onChanged,
       ),
     );
   }

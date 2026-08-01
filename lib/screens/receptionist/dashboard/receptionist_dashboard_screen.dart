@@ -61,6 +61,9 @@ class ReceptionistDashboardScreen extends GetView<ReceptionistDashboardControlle
                   ),
                   const SizedBox(height: 24),
                   _buildStatusSection(),
+                  const SizedBox(height: 24),
+                  _buildLegalSection(),
+                  const SizedBox(height: 40),
                 ]),
               ),
             ),
@@ -229,6 +232,41 @@ class ReceptionistDashboardScreen extends GetView<ReceptionistDashboardControlle
             controller.pendingCount.value.toString(),
             Colors.orange,
             onTap: () => _showAppointmentsBottomSheet('Pending Appointments', controller.getFilteredAppointments('Pending')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegalSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Legal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          child: Column(
+            children: [
+              ListTile(
+                onTap: LauncherHelper.launchPrivacyPolicy,
+                leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
+                title: const Text('Privacy Policy', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
+              ),
+              const Divider(indent: 50, endIndent: 20, height: 1),
+              ListTile(
+                onTap: LauncherHelper.launchTermsConditions,
+                leading: const Icon(Icons.description_outlined, color: AppColors.primary),
+                title: const Text('Terms & Conditions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
+              ),
+            ],
           ),
         ),
       ],

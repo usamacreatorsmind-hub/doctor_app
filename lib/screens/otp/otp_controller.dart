@@ -23,8 +23,8 @@ class OtpController extends GetxController {
 
   String? name, email, password, dob, gender, bloodGroup;
 
-  final List<TextEditingController> otpControllers = List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> focusNodes = List.generate(6, (_) => FocusNode());
+  final otpController = TextEditingController();
+  final focusNode = FocusNode();
 
   final RxInt timerSeconds = 30.obs;
   final RxBool canResend = false.obs;
@@ -61,9 +61,9 @@ class OtpController extends GetxController {
     canResend.value = false;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (timerSeconds.value > 0)
+      if (timerSeconds.value > 0) {
         timerSeconds.value--;
-      else {
+      } else {
         canResend.value = true;
         timer.cancel();
       }
@@ -76,34 +76,17 @@ class OtpController extends GetxController {
     return '${m.toString().padLeft(1, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  void onDigitEntered(int index, String value) {
-    if (value.isNotEmpty && index < 5) focusNodes[index + 1].requestFocus();
-    _updateOtp();
-  }
-
-  void onBackspace(int index) {
-    if (otpControllers[index].text.isEmpty && index > 0) {
-      focusNodes[index - 1].requestFocus();
-      otpControllers[index - 1].clear();
-    }
-    _updateOtp();
-  }
-
-  void _updateOtp() {
-    enteredOtp.value = otpControllers.map((c) => c.text).join();
-    update();
-  }
-
   bool get isOtpComplete => enteredOtp.value.length == 6;
 
-  Future<void> verifyOtp() async {
-    if (!isOtpComplete) return;
+  Future<void> verifyOtp([String? pin]) async {
+    final code = pin ?? otpController.text;
+    if (code.length != 6) return;
 
     isLoading.value = true;
     update();
 
     try {
-      final phoneAuthCredential = PhoneAuthProvider.credential(verificationId: verificationId!, smsCode: enteredOtp.value);
+      final phoneAuthCredential = PhoneAuthProvider.credential(verificationId: verificationId!, smsCode: code);
 
       if (isForgotPassword) {
         // Sign in with Phone to allow password update
@@ -251,8 +234,8 @@ class OtpController extends GetxController {
 
   @override
   void onClose() {
-    for (var c in otpControllers) c.dispose();
-    for (var f in focusNodes) f.dispose();
+    otpController.dispose();
+    focusNode.dispose();
     _timer?.cancel();
     super.onClose();
   }
