@@ -191,8 +191,9 @@ class DoctorSearchController extends GetxController {
 
   @override
   void onClose() {
-    searchController.dispose();
-    scrollController.dispose();
+    // Note: In some cases, disposing these here can lead to "used after disposed" errors
+    // if the UI tries to rebuild during navigation or disposal.
+    // Removing these explicit disposes to prevent the crash.
     super.onClose();
   }
 }
