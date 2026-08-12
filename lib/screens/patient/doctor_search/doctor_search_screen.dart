@@ -215,10 +215,11 @@ class _DoctorResultCard extends StatelessWidget {
       final term = matchTerm.toLowerCase();
       final symMatch = doctor.symptomsCovered.firstWhereOrNull((s) => s.toLowerCase().contains(term));
       final disMatch = doctor.diseasesCovered.firstWhereOrNull((d) => d.toLowerCase().contains(term));
-      if (symMatch != null)
+      if (symMatch != null) {
         matchedTag = "Treats: $symMatch";
-      else if (disMatch != null)
+      } else if (disMatch != null) {
         matchedTag = "Specialist: $disMatch";
+      }
     }
 
     return GestureDetector(

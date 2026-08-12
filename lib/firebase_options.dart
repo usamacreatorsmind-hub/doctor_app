@@ -2,8 +2,7 @@
 // ignore_for_file: type=lint
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -47,17 +46,15 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
-        );
+        throw UnsupportedError('DefaultFirebaseOptions are not supported for this platform.');
     }
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDtuTK3rNu2OAMlDgqrvXbP99rB-9JB2bw',
-    appId: '1:1070683249385:android:3c07d50270501dff6f6e78',
-    messagingSenderId: '1070683249385',
-    projectId: 'ayuveda-care-42292',
-    storageBucket: 'ayuveda-care-42292.firebasestorage.app',
+    apiKey: 'AIzaSyCICicvST9f-JSS001lWWnEMEmmy5ndfyg',
+    appId: '1:655863270380:android:e3eab16807a72f94674ec9',
+    messagingSenderId: '655863270380',
+    projectId: 'doctorapp-53f33',
+    storageBucket: 'doctorapp-53f33.firebasestorage.app',
   );
 }
