@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../Repository/auth_repository.dart';
 import '../../../models/doctor_model.dart';
@@ -24,6 +25,9 @@ class DoctorSelfProfileController extends GetxController {
   final isMasterLoading = false.obs;
   final isEditing = false.obs;
   final doctorProfile = Rxn<DoctorModel>();
+
+  final latitude = Rxn<double>();
+  final longitude = Rxn<double>();
 
   // Master Data Lists
   final hospitals = <HospitalModel>[].obs;
@@ -182,6 +186,53 @@ class DoctorSelfProfileController extends GetxController {
     selectedSymptoms.assignAll(profile.symptomsCovered);
     selectedDiseases.assignAll(profile.diseasesCovered);
     pickedImage.value = null;
+    latitude.value = profile.latitude;
+    longitude.value = profile.longitude;
+  }
+
+  Future<void> getCurrentLocation() async {
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppSnackBar.show('Location services are disabled.');
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          AppSnackBar.show('Location permissions are denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        AppSnackBar.show('Location permissions are permanently denied.');
+        return;
+      }
+
+      isLoading.value = true;
+      update();
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      latitude.value = position.latitude;
+      longitude.value = position.longitude;
+
+      AppSnackBar.show('Location Fetched: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}');
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+      AppSnackBar.show('Failed to get location: $e');
+    } finally {
+      isLoading.value = false;
+      update();
+    }
   }
 
   void toggleEdit() {
@@ -258,6 +309,8 @@ class DoctorSelfProfileController extends GetxController {
         'diseasesCovered': selectedDiseases.toList(),
         'photoUrl': photoUrl,
         'photo': photoUrl,
+        'latitude': latitude.value,
+        'longitude': longitude.value,
       };
 
       if (doctorProfile.value!.doctorId.isEmpty) {

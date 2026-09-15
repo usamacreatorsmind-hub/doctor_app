@@ -52,7 +52,9 @@ class PdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text("Date: ${DateFormat('dd MMM yyyy').format(prescription.createdAt)}"),
-                      pw.Text("ID: ${prescription.prescriptionId.length > 8 ? prescription.prescriptionId.substring(0, 8).toUpperCase() : prescription.prescriptionId.toUpperCase()}"),
+                      pw.Text(
+                        "ID: ${prescription.prescriptionId.length > 8 ? prescription.prescriptionId.substring(0, 8).toUpperCase() : prescription.prescriptionId.toUpperCase()}",
+                      ),
                     ],
                   ),
                 ],
@@ -75,10 +77,7 @@ class PdfService {
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text("Mob: ${doctor.mobileNumber}"),
-                      pw.Text("Email: ${doctor.email}"),
-                    ],
+                    children: [pw.Text("Mob: ${doctor.mobileNumber}"), pw.Text("Email: ${doctor.email}")],
                   ),
                 ],
               ),
@@ -103,15 +102,14 @@ class PdfService {
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
                         pw.Text("Age: ${patientAge ?? 'N/A'} | Gender: ${patientGender ?? 'N/A'}"),
-                        if (guardianName != null && guardianName.isNotEmpty)
-                          pw.Text("Guardian: $guardianName"),
+                        if (guardianName != null && guardianName.isNotEmpty) pw.Text("Guardian: $guardianName"),
                       ],
                     ),
                     pw.SizedBox(height: 4),
                     pw.Text("Address: ${patientAddress ?? 'N/A'}"),
                     if (appointment?.symptoms != null && appointment!.symptoms.isNotEmpty) ...[
-                       pw.SizedBox(height: 4),
-                       pw.Text("Symptoms: ${appointment.symptoms}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
+                      pw.SizedBox(height: 4),
+                      pw.Text("Symptoms: ${appointment.symptoms}", style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
                     ],
                   ],
                 ),
@@ -119,7 +117,10 @@ class PdfService {
               pw.SizedBox(height: 20),
 
               // Prescription Body
-              pw.Text("Rx (Prescription)", style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+              pw.Text(
+                "Rx (Prescription)",
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+              ),
               pw.SizedBox(height: 10),
 
               // Medicines Table
@@ -134,21 +135,12 @@ class PdfService {
                 children: [
                   pw.TableRow(
                     decoration: const pw.BoxDecoration(color: PdfColors.blue100),
-                    children: [
-                      _tableHeader("Medicine Name"),
-                      _tableHeader("Dosage"),
-                      _tableHeader("Frequency"),
-                      _tableHeader("Duration"),
-                    ],
+                    children: [_tableHeader("Medicine Name"), _tableHeader("Dosage"), _tableHeader("Frequency"), _tableHeader("Duration")],
                   ),
-                  ...prescription.medicines.map((m) => pw.TableRow(
-                        children: [
-                          _tableCell(m.name),
-                          _tableCell(m.dosage),
-                          _tableCell(m.frequency),
-                          _tableCell(m.duration),
-                        ],
-                      )),
+                  ...prescription.medicines.map(
+                    (m) =>
+                        pw.TableRow(children: [_tableCell(m.name), _tableCell(m.dosage), _tableCell(m.frequency), _tableCell(m.duration)]),
+                  ),
                 ],
               ),
 
@@ -171,13 +163,19 @@ class PdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       if (prescription.followUpDate != null)
-                        pw.Text("Follow-up Date: ${prescription.followUpDate}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.orange)),
+                        pw.Text(
+                          "Follow-up Date: ${prescription.followUpDate}",
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.orange),
+                        ),
                     ],
                   ),
                   pw.Column(
                     children: [
                       pw.SizedBox(height: 40),
-                      pw.Container(width: 120, decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide()))),
+                      pw.Container(
+                        width: 120,
+                        decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide())),
+                      ),
                       pw.Text("Doctor's Signature"),
                     ],
                   ),
@@ -205,5 +203,67 @@ class PdfService {
       padding: const pw.EdgeInsets.all(5),
       child: pw.Text(text, style: const pw.TextStyle(fontSize: 11)),
     );
+  }
+
+  // ── Print Doctor QR Code Poster ──
+  static Future<void> printDoctorQrPoster({required String doctorName, required String specialization, required String uid}) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Center(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(32),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.blue800, width: 4),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(20)),
+              ),
+              child: pw.Column(
+                mainAxisSize: pw.MainAxisSize.min,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Text(
+                    "Ayu Veda Care",
+                    style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800),
+                  ),
+                  pw.SizedBox(height: 10),
+                  pw.Text(
+                    "SCAN TO BOOK APPOINTMENT",
+                    style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700, letterSpacing: 1.5),
+                  ),
+                  pw.SizedBox(height: 30),
+
+                  // QR Container
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(16),
+                    decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400, width: 2)),
+                    child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: uid, width: 240, height: 240),
+                  ),
+                  pw.SizedBox(height: 30),
+
+                  pw.Text(
+                    doctorName,
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.black),
+                  ),
+                  pw.SizedBox(height: 6),
+                  pw.Text(specialization, style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
+                  pw.SizedBox(height: 40),
+                  pw.Divider(thickness: 1, color: PdfColors.grey400),
+                  pw.SizedBox(height: 10),
+                  pw.Text(
+                    "Powered by Ayu Veda Care App",
+                    style: pw.TextStyle(fontSize: 10, color: PdfColors.grey500, fontStyle: pw.FontStyle.italic),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(name: 'Doctor_QR_Poster', onLayout: (PdfPageFormat format) async => pdf.save());
   }
 }

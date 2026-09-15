@@ -16,6 +16,7 @@ void main() async {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
     );
+
     runApp(const DoctorAppointmentApp());
   } catch (e) {
     runApp(const DoctorAppointmentApp());
@@ -30,7 +31,7 @@ class DoctorAppointmentApp extends StatelessWidget {
     return SafeArea(
       top: false,
       child: GetMaterialApp(
-        title: 'Doctor Appointment App',
+        title: 'Ayu Veda Care',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorSchemeSeed: const Color(0xFF1565C0),

@@ -91,6 +91,27 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                     _buildSectionCard(
                       title: 'Address',
                       children: [
+                        ElevatedButton.icon(
+                          onPressed: controller.getCurrentLocation,
+                          icon: const Icon(Icons.my_location_rounded, size: 18),
+                          label: const Text('Get Current Location 📍', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.hospitalIcon,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 40),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                        Obx(() => controller.latitude.value != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  "📍 Location Saved: ${controller.latitude.value!.toStringAsFixed(4)}, ${controller.longitude.value!.toStringAsFixed(4)}",
+                                  style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
+                                ),
+                              )
+                            : const SizedBox.shrink()),
+                        const SizedBox(height: 16),
                         _buildTextField(
                           controller.addressController,
                           'Full Address *',

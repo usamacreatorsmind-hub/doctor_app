@@ -27,6 +27,8 @@ class DoctorModel {
   final String? clinicName;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final double? latitude;
+  final double? longitude;
 
   const DoctorModel({
     required this.doctorId,
@@ -55,6 +57,8 @@ class DoctorModel {
     this.clinicName,
     required this.createdAt,
     this.updatedAt,
+    this.latitude,
+    this.longitude,
   });
 
   static DateTime _parseDateTime(dynamic value) {
@@ -122,6 +126,8 @@ class DoctorModel {
       clinicName: map['clinicName']?.toString(),
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
+      latitude: map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null,
+      longitude: map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null,
     );
   }
 
@@ -154,6 +160,8 @@ class DoctorModel {
       'clinicName': clinicName,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
@@ -161,6 +169,8 @@ class DoctorModel {
     String? hospitalId,
     List<String>? hospitalIds,
     String? status,
+    double? latitude,
+    double? longitude,
   }) {
     return DoctorModel(
       doctorId: doctorId,
@@ -185,8 +195,12 @@ class DoctorModel {
       rating: rating,
       totalReviews: totalReviews,
       status: status ?? this.status,
+      practiceType: practiceType,
+      clinicName: clinicName,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }

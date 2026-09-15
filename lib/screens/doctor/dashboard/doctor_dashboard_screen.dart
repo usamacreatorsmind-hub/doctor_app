@@ -5,6 +5,7 @@ import '../../../models/user_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../models/appointment_model.dart';
+import '../../../models/patient_profile_model.dart';
 import 'doctor_dashboard_controller.dart';
 
 class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
@@ -21,28 +22,48 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
 
         return RefreshIndicator(onRefresh: controller.onRefresh, child: _buildBody());
       }),
-      bottomNavigationBar: Obx(
-        () => Container(
-          decoration: BoxDecoration(
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
-          ),
-          child: BottomNavigationBar(
-            currentIndex: controller.currentIndex.value,
-            onTap: controller.changeTab,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textHint,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.event_note_rounded), label: 'Appts'),
-              BottomNavigationBarItem(icon: Icon(Icons.group_rounded), label: 'Patients'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
-            ],
-          ),
+      bottomNavigationBar: SafeArea(child: _buildBottomNav()),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 10, top: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+      ),
+      child: Obx(
+        () => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _navItem(Icons.grid_view_rounded, 'Home', controller.currentIndex.value == 0, () => controller.changeTab(0)),
+            _navItem(Icons.event_note_rounded, 'Appts', controller.currentIndex.value == 1, () => controller.changeTab(1)),
+            _navItem(Icons.group_rounded, 'Patients', controller.currentIndex.value == 2, () => controller.changeTab(2)),
+            _navItem(Icons.person_rounded, 'Profile', controller.currentIndex.value == 3, () => controller.changeTab(3)),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, String label, bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: isActive ? AppColors.primary : Colors.grey.shade400, size: 26),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              color: isActive ? AppColors.primary : Colors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -70,13 +91,162 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
         children: [
           _buildHeader(),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [const SizedBox(height: 20), _buildStatCards(), const SizedBox(height: 24), _buildDailyInsight()],
+              children: [
+                _buildUpcomingAppointmentCard(),
+                const SizedBox(height: 24),
+                _buildStatCards(),
+                const SizedBox(height: 24),
+                _buildQuickActions(),
+                const SizedBox(height: 24),
+                _buildDailyInsight(),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingAppointmentCard() {
+    return Obx(() {
+      final appt = controller.nextAppointment.value;
+      if (appt == null) return const SizedBox.shrink();
+
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.primary, Color(0xFF1976D2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Next Patient',
+                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const Spacer(),
+                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.white24,
+                  child: const Icon(Icons.person, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appt.patientName ?? "Patient",
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Token #${appt.tokenNumber?.toString().padLeft(2, '0') ?? "N/A"} · ${appt.timeSlot}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                _statusBadge(appt.status, isDark: true),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white24, height: 1),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _nextDetail(Icons.medical_services_outlined, appt.consultationType),
+                ElevatedButton(
+                  onPressed: () => Get.toNamed(AppRoutes.addPrescription, arguments: {'appointment': appt}),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primary,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Start Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _quickActionCard('Schedule', Icons.calendar_month_rounded, Colors.blue, () => Get.toNamed(AppRoutes.doctorSchedule)),
+            const SizedBox(width: 12),
+            _quickActionCard('My QR', Icons.qr_code_2_rounded, Colors.purple, () => Get.toNamed(AppRoutes.doctorSelfProfile)),
+            const SizedBox(width: 12),
+            _quickActionCard('Reviews', Icons.star_rounded, Colors.orange, () => Get.toNamed(AppRoutes.doctorReviews)),
+            const SizedBox(width: 12),
+            _quickActionCard('Reports', Icons.assessment_rounded, Colors.green, () => Get.toNamed(AppRoutes.doctorReports)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _quickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 8),
+              Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -97,11 +267,15 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
   Widget _buildDailyInsight() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryBorder.withOpacity(0.5)),
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade50, Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.amber.shade100, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,22 +284,27 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.amber.shade50, shape: BoxShape.circle),
-                child: Icon(Icons.lightbulb_outline_rounded, color: Colors.amber.shade700, size: 20),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: Icon(Icons.lightbulb_rounded, color: Colors.amber.shade700, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text('Medical Insight of the Day', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text('Medical Insight', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             '"Patient communication is just as important as clinical skills. Taking an extra 2 minutes to explain a diagnosis can increase treatment adherence by 40%."',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontStyle: FontStyle.italic, height: 1.5),
+            style: TextStyle(fontSize: 13, color: Colors.blueGrey.shade800, fontStyle: FontStyle.italic, height: 1.5, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '— World Health Journal',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                '— World Health Journal',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+              ),
+            ],
           ),
         ],
       ),
@@ -422,54 +601,85 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
       final profile = controller.doctorProfile.value;
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(20, 70, 20, 30),
         decoration: const BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white24,
-                    backgroundImage: (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty) ? NetworkImage(profile.photoUrl!) : null,
-                    child: (profile?.photoUrl == null || profile!.photoUrl!.isEmpty)
-                        ? const Icon(Icons.person, color: Colors.white, size: 30)
-                        : null,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white24,
+                  backgroundImage: (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty) ? NetworkImage(profile.photoUrl!) : null,
+                  child: (profile?.photoUrl == null || profile!.photoUrl!.isEmpty)
+                      ? const Icon(Icons.person, color: Colors.white, size: 30)
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Welcome Back,', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 2),
+                      Text(
+                        profile?.doctorName ?? 'Doctor',
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.verified_user_rounded, color: Colors.white60, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            profile?.specialization.join(', ') ?? 'Specialist',
+                            style: const TextStyle(color: Colors.white60, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Welcome back,', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                        Text(
-                          profile?.doctorName ?? 'Doctor',
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          profile?.specialization.join(', ') ?? 'Specialist',
-                          style: const TextStyle(color: Colors.white60, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                _iconBtn(Icons.notifications_none_rounded, () => Get.toNamed(AppRoutes.notifications), hasBadge: true),
+              ],
             ),
-            GestureDetector(
-              onTap: () {
-                Get.toNamed(AppRoutes.notifications);
-              },
-              child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 27),
-            ),
-          ],
+          ),
         ),
       );
     });
+  }
+
+  Widget _iconBtn(IconData icon, VoidCallback onTap, {bool hasBadge = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.15)),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          if (hasBadge)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red,
+                  border: Border.all(color: AppColors.primary, width: 1.5),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatCards() {
@@ -534,25 +744,26 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+          border: Border.all(color: color.withOpacity(0.1), width: 1),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 6))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 16),
             Text(
               value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -838,13 +1049,13 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
               _detailItem(Icons.phone_android_rounded, 'Mobile Number', patient.mobile),
               _detailItem(Icons.email_outlined, 'Email Address', patient.email),
               const Divider(height: 32),
-              FutureBuilder(
+              FutureBuilder<PatientProfileModel?>(
                 future: controller.firestoreService.getPatientProfile(patient.uid),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  if (snapshot.hasError || !snapshot.hasData) {
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
                     return const Text('Profile details not found', style: TextStyle(color: AppColors.textHint));
                   }
                   final profile = snapshot.data!;
@@ -985,29 +1196,30 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
     );
   }
 
-  Widget _statusBadge(String status) {
-    Color bg = Colors.grey.shade100;
-    Color text = Colors.grey;
+  Widget _statusBadge(String status, {bool isDark = false}) {
+    Color bg = isDark ? Colors.white.withOpacity(0.2) : Colors.grey.shade100;
+    Color text = isDark ? Colors.white : Colors.grey;
+
     if (status == 'Confirmed') {
-      bg = Colors.green.shade50;
-      text = Colors.green;
+      bg = isDark ? Colors.green.withOpacity(0.3) : Colors.green.shade50;
+      text = isDark ? Colors.white : Colors.green;
     } else if (status == 'Arrived') {
-      bg = Colors.blue.shade50;
-      text = Colors.blue;
+      bg = isDark ? Colors.blue.withOpacity(0.3) : Colors.blue.shade50;
+      text = isDark ? Colors.white : Colors.blue;
     } else if (status == 'Pending') {
-      bg = Colors.orange.shade50;
-      text = Colors.orange;
+      bg = isDark ? Colors.orange.withOpacity(0.3) : Colors.orange.shade50;
+      text = isDark ? Colors.white : Colors.orange;
     } else if (status == 'Cancelled') {
-      bg = Colors.red.shade50;
-      text = Colors.red;
+      bg = isDark ? Colors.red.withOpacity(0.3) : Colors.red.shade50;
+      text = isDark ? Colors.white : Colors.red;
     } else if (status == 'Completed') {
-      bg = Colors.blue.shade50;
-      text = Colors.blue;
+      bg = isDark ? Colors.blue.withOpacity(0.3) : Colors.blue.shade50;
+      text = isDark ? Colors.white : Colors.blue;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
       child: Text(
         status,
         style: TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold),

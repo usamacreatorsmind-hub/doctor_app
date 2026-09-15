@@ -5,6 +5,8 @@ import '../../../models/doctor_model.dart';
 import '../../../models/review_model.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../utils/helper.dart';
 
 class DoctorProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
@@ -13,6 +15,7 @@ class DoctorProfileController extends GetxController {
   final isLoading = false.obs;
   final hospitalName = ''.obs;
   final isAdminView = false.obs;
+  final hospitalLatLng = Rxn<Map<String, double>>();
   
   // Reviews List
   final reviews = <ReviewModel>[].obs;
@@ -49,9 +52,41 @@ class DoctorProfileController extends GetxController {
       final hospital = await _firestoreService.getHospital(doctor.hospitalId);
       if (hospital != null) {
         hospitalName.value = hospital.hospitalName;
+        if (hospital.latitude != null && hospital.longitude != null) {
+          hospitalLatLng.value = {'lat': hospital.latitude!, 'lng': hospital.longitude!};
+        }
       }
     } catch (e) {
       print("Error loading hospital: $e");
+    }
+  }
+
+  Future<void> onNavigateDirections() async {
+    double? lat;
+    double? lng;
+
+    // 1. Check doctor's personal clinic location first
+    if (doctor.latitude != null && doctor.longitude != null) {
+      lat = doctor.latitude;
+      lng = doctor.longitude;
+    } 
+    // 2. Fallback to hospital location
+    else if (hospitalLatLng.value != null) {
+      lat = hospitalLatLng.value!['lat'];
+      lng = hospitalLatLng.value!['lng'];
+    }
+
+    if (lat != null && lng != null) {
+      final String googleMapsUrl = "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving";
+      final Uri uri = Uri.parse(googleMapsUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        AppSnackBar.show("Could not launch Google Maps");
+      }
+    } else {
+      AppSnackBar.show("Location coordinates not available for this provider.");
     }
   }
 

@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../Repository/auth_repository.dart';
 import '../../../models/hospital_model.dart';
@@ -37,6 +39,9 @@ class HospitalProfileController extends GetxController {
   final cityController = TextEditingController();
   final stateController = TextEditingController();
   final pincodeController = TextEditingController();
+
+  final latitude = Rxn<double>();
+  final longitude = Rxn<double>();
 
   // Hospital Details
   final selectedDepartments = <String>[].obs;
@@ -122,6 +127,83 @@ class HospitalProfileController extends GetxController {
     emergencyAvailable.value = data.emergencyAvailable;
     selectedStatus.value = data.status;
     logoUrl.value = data.logo;
+    latitude.value = data.latitude;
+    longitude.value = data.longitude;
+  }
+
+  Future<void> getCurrentLocation() async {
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppSnackBar.show('Location services are disabled.');
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          AppSnackBar.show('Location permissions are denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        AppSnackBar.show('Location permissions are permanently denied.');
+        return;
+      }
+
+      isLoading.value = true;
+      update();
+
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+      latitude.value = position.latitude;
+      longitude.value = position.longitude;
+
+      // ── Reverse Geocoding ──
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks[0];
+
+          String name = place.name ?? "";
+          String street = place.street ?? "";
+          String subLocality = place.subLocality ?? "";
+          String locality = place.locality ?? "";
+          String subAdministrativeArea = place.subAdministrativeArea ?? "";
+          String administrativeArea = place.administrativeArea ?? "";
+
+          // More robust address construction
+          List<String> addressParts = [];
+          if (name.isNotEmpty && name != street) addressParts.add(name);
+          if (street.isNotEmpty) addressParts.add(street);
+          if (subLocality.isNotEmpty) addressParts.add(subLocality);
+          if (locality.isNotEmpty) addressParts.add(locality);
+
+          addressController.text = addressParts.join(", ");
+
+          // Fallback for City
+          cityController.text = locality.isNotEmpty ? locality : subAdministrativeArea;
+          stateController.text = administrativeArea;
+          pincodeController.text = place.postalCode ?? "";
+          update(); // Ensure UI reflects text changes
+        }
+      } catch (e) {
+        debugPrint("Reverse geocoding failed: $e");
+      }
+
+      AppSnackBar.show('Location & Address Fetched Successfully 📍');
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+      AppSnackBar.show('Failed to get location: $e');
+    } finally {
+      isLoading.value = false;
+      update();
+    }
   }
 
   Future<void> pickLogo() async {
@@ -230,6 +312,8 @@ class HospitalProfileController extends GetxController {
         createdBy: hospital.value?.createdBy ?? 'hospital_admin',
         createdAt: hospital.value?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        latitude: latitude.value,
+        longitude: longitude.value,
       );
 
       await _firestoreService.updateHospital(hId, updatedHospital.toMap());

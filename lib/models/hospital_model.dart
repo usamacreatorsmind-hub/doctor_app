@@ -20,6 +20,8 @@ class HospitalModel {
   final String? createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final double? latitude;
+  final double? longitude;
 
   const HospitalModel({
     required this.hospitalId,
@@ -41,6 +43,8 @@ class HospitalModel {
     this.createdBy,
     required this.createdAt,
     this.updatedAt,
+    this.latitude,
+    this.longitude,
   });
 
   static DateTime _parseDateTime(dynamic value) {
@@ -94,6 +98,8 @@ class HospitalModel {
       createdBy: map['createdBy'],
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
+      latitude: map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null,
+      longitude: map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null,
     );
   }
 
@@ -119,6 +125,8 @@ class HospitalModel {
       'createdBy': createdBy,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
@@ -137,6 +145,8 @@ class HospitalModel {
     Map<String, String>? workingHours,
     bool? emergencyAvailable,
     String? status,
+    double? latitude,
+    double? longitude,
   }) {
     return HospitalModel(
       hospitalId: hospitalId,
@@ -158,6 +168,8 @@ class HospitalModel {
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }

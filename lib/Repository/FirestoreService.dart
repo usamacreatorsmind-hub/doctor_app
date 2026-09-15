@@ -274,14 +274,33 @@ class FirestoreService {
 
       if (name != null && name.isNotEmpty) {
         final term = name.toLowerCase();
+        
+        // Fetch unique hospital details for the current batch to allow searching by hospital name
+        Map<String, String> hospitalNames = {};
+        final hIds = results.expand((d) => d.hospitalIds).toSet().toList();
+        if (hIds.isNotEmpty) {
+          // Fetch hospitals in chunks of 10 (Firestore limit for whereIn)
+          for (var i = 0; i < hIds.length; i += 10) {
+            final end = (i + 10 < hIds.length) ? i + 10 : hIds.length;
+            final chunk = hIds.sublist(i, end);
+            final hSnap = await _hospitals.where(FieldPath.documentId, whereIn: chunk).get();
+            for (var hDoc in hSnap.docs) {
+              hospitalNames[hDoc.id] = (hDoc.data() as Map<String, dynamic>)['hospitalName']?.toString().toLowerCase() ?? '';
+            }
+          }
+        }
+
         results = results.where((d) {
           final nameMatch = d.doctorName.toLowerCase().contains(term);
           final specMatch = d.specialization.any((s) => s.toLowerCase().contains(term));
           final symMatch = d.symptomsCovered.any((s) => s.toLowerCase().contains(term));
           final disMatch = d.diseasesCovered.any((dis) => dis.toLowerCase().contains(term));
           final clinicMatch = d.clinicName?.toLowerCase().contains(term) ?? false;
+          
+          // Check if any associated hospital name matches
+          final hMatch = d.hospitalIds.any((id) => hospitalNames[id]?.contains(term) ?? false);
 
-          return nameMatch || specMatch || symMatch || disMatch || clinicMatch;
+          return nameMatch || specMatch || symMatch || disMatch || clinicMatch || hMatch;
         }).toList();
       }
 
@@ -710,5 +729,54 @@ class FirestoreService {
       batch.update(doc.reference, {'isRead': true});
     }
     await batch.commit();
+  }
+
+  // ── Banners for Carousel ──
+  Future<List<String>> getCarouselBanners() async {
+    try {
+      final snap = await _db.collection('banners').get();
+      
+      // Auto seed if collection is completely empty
+      if (snap.docs.isEmpty) {
+        await seedCarouselBanners();
+        final secondarySnap = await _db.collection('banners').get();
+        return secondarySnap.docs
+            .map((doc) => doc.data()['imageUrl'] as String? ?? '')
+            .where((url) => url.isNotEmpty)
+            .toList();
+      }
+
+      return snap.docs
+          .map((doc) => doc.data()['imageUrl'] as String? ?? '')
+          .where((url) => url.isNotEmpty)
+          .toList();
+    } catch (e) {
+      print("Error fetching banners: $e");
+      return [];
+    }
+  }
+
+  // ── Seed Carousel Banners Data ──
+  Future<void> seedCarouselBanners() async {
+    try {
+      final List<String> seedUrls = [
+        'https://images.unsplash.com/photo-1628771065518-0d82f14e88a2?q=80&w=1000&auto=format&fit=crop', // Medical Consultation Banner
+        'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?q=80&w=1000&auto=format&fit=crop', // Health Checkup Banner
+        'https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1000&auto=format&fit=crop', // Digital Healthcare Care Banner
+      ];
+
+      final batch = _db.batch();
+      for (var url in seedUrls) {
+        final docRef = _db.collection('banners').doc();
+        batch.set(docRef, {
+          'imageUrl': url,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+      print("Carousel banners seeded successfully into Firebase Firestore!");
+    } catch (e) {
+      print("Error seeding carousel banners: $e");
+    }
   }
 }

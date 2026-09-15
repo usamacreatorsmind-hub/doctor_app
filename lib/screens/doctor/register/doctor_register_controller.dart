@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../Repository/auth_repository.dart';
 import '../../../models/user_model.dart';
@@ -25,6 +27,15 @@ class DoctorRegisterController extends GetxController {
   final bookingFeeController = TextEditingController(text: '50');
   final bioController = TextEditingController();
   final clinicNameController = TextEditingController();
+
+  // Address Controllers for Clinic
+  final addressController = TextEditingController();
+  final cityController = TextEditingController();
+  final stateController = TextEditingController();
+  final pincodeController = TextEditingController();
+
+  final latitude = Rxn<double>();
+  final longitude = Rxn<double>();
 
   // Selections
   final isLoading = false.obs;
@@ -73,8 +84,6 @@ class DoctorRegisterController extends GetxController {
 
       hospitals.assignAll(results[0] as List<HospitalModel>);
 
-
-
       availableSpecializations.assignAll(results[1] as List<String>);
       availableSymptoms.assignAll(results[2] as List<String>);
       availableDiseases.assignAll(results[3] as List<String>);
@@ -93,6 +102,100 @@ class DoctorRegisterController extends GetxController {
       isMasterLoading.value = false;
       update();
     }
+  }
+
+  Future<void> getCurrentLocation() async {
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppSnackBar.show('Location services are disabled.');
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          AppSnackBar.show('Location permissions are denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        AppSnackBar.show('Location permissions are permanently denied.');
+        return;
+      }
+
+      isLoading.value = true;
+      update();
+
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+      latitude.value = position.latitude;
+      longitude.value = position.longitude;
+
+      // ── Reverse Geocoding ──
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks[0];
+
+          String name = place.name ?? "";
+          String street = place.street ?? "";
+          String subLocality = place.subLocality ?? "";
+          String locality = place.locality ?? "";
+          String subAdministrativeArea = place.subAdministrativeArea ?? "";
+          String administrativeArea = place.administrativeArea ?? "";
+
+          // More robust address construction
+          List<String> addressParts = [];
+          if (name.isNotEmpty && name != street) addressParts.add(name);
+          if (street.isNotEmpty) addressParts.add(street);
+          if (subLocality.isNotEmpty) addressParts.add(subLocality);
+          if (locality.isNotEmpty) addressParts.add(locality);
+
+          addressController.text = addressParts.join(", ");
+
+          // Fallback for City
+          cityController.text = locality.isNotEmpty ? locality : subAdministrativeArea;
+          stateController.text = administrativeArea;
+          pincodeController.text = place.postalCode ?? "";
+
+          update(); // Force UI refresh
+        }
+      } catch (e) {
+        debugPrint("Reverse geocoding failed: $e");
+      }
+
+      AppSnackBar.show('Location & Address Fetched Successfully 📍');
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+      AppSnackBar.show('Failed to get location: $e');
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  @override
+  void onClose() {
+    nameController.dispose();
+    emailController.dispose();
+    mobileController.dispose();
+    passwordController.dispose();
+    experienceController.dispose();
+    feeController.dispose();
+    bookingFeeController.dispose();
+    bioController.dispose();
+    clinicNameController.dispose();
+    addressController.dispose();
+    cityController.dispose();
+    stateController.dispose();
+    pincodeController.dispose();
+    super.onClose();
   }
 
   void togglePasswordVisibility() => isPasswordHidden.value = !isPasswordHidden.value;
@@ -117,7 +220,7 @@ class DoctorRegisterController extends GetxController {
 
   Future<void> onRegisterPressed() async {
     if (!formKey.currentState!.validate()) return;
-    
+
     if (practiceType.value == 'hospital' && selectedHospitalIds.isEmpty) {
       AppSnackBar.show('Please select at least one hospital');
       return;
@@ -142,10 +245,7 @@ class DoctorRegisterController extends GetxController {
 
     try {
       // 1. Create Auth User
-      UserCredential? userCredential = await _authRepository.signUpAuth(
-        emailController.text.trim(),
-        passwordController.text.trim(),
-      );
+      UserCredential? userCredential = await _authRepository.signUpAuth(emailController.text.trim(), passwordController.text.trim());
 
       if (userCredential != null && userCredential.user != null) {
         final String uid = userCredential.user!.uid;
@@ -160,10 +260,10 @@ class DoctorRegisterController extends GetxController {
             adminUserId: uid,
             hospitalName: clinicNameController.text.trim(),
             registrationNo: 'CLINIC-${DateTime.now().millisecondsSinceEpoch}',
-            address: 'To be updated',
-            city: 'To be updated',
-            state: 'To be updated',
-            pincode: '',
+            address: addressController.text.trim().isEmpty ? 'To be updated' : addressController.text.trim(),
+            city: cityController.text.trim().isEmpty ? 'To be updated' : cityController.text.trim(),
+            state: stateController.text.trim().isEmpty ? 'To be updated' : stateController.text.trim(),
+            pincode: pincodeController.text.trim(),
             contactNumber: mobileController.text.trim(),
             email: emailController.text.trim(),
             departments: selectedSpecializations.toList(),
@@ -171,6 +271,8 @@ class DoctorRegisterController extends GetxController {
             emergencyAvailable: false,
             status: 'active',
             createdAt: DateTime.now(),
+            latitude: latitude.value,
+            longitude: longitude.value,
           );
           finalHospitalId = await _firestoreService.createHospital(clinic);
           finalHospitalIds = [finalHospitalId];
@@ -203,6 +305,8 @@ class DoctorRegisterController extends GetxController {
           practiceType: practiceType.value,
           clinicName: practiceType.value == 'clinic' ? clinicNameController.text.trim() : null,
           createdAt: DateTime.now(),
+          latitude: latitude.value,
+          longitude: longitude.value,
         );
 
         final String doctorId = await _firestoreService.createDoctor(doctor);

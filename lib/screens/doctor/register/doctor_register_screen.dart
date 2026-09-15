@@ -80,6 +80,70 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                                       (controller.practiceType.value == 'clinic' && (v == null || v.isEmpty)) ? 'Enter clinic name' : null,
                                 ),
                         ),
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          label: 'Full Address',
+                          hint: 'Street, Area, Building',
+                          icon: Icons.location_on_outlined,
+                          controller: controller.addressController,
+                          validator: (v) => (v == null || v.isEmpty) ? 'Enter address' : null,
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildInputField(
+                                label: 'City',
+                                hint: 'City',
+                                icon: Icons.location_city_rounded,
+                                controller: controller.cityController,
+                                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildInputField(
+                                label: 'State',
+                                hint: 'State',
+                                icon: Icons.map_outlined,
+                                controller: controller.stateController,
+                                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          label: 'Pincode',
+                          hint: '6-digit pincode',
+                          icon: Icons.pin_drop_outlined,
+                          controller: controller.pincodeController,
+                          keyboardType: TextInputType.number,
+                          validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: controller.getCurrentLocation,
+                          icon: const Icon(Icons.my_location_rounded, size: 18),
+                          label: const Text('Capture Current Location 📍', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.hospitalIcon,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                        Obx(
+                          () => controller.latitude.value != null
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "📍 Location Saved: ${controller.latitude.value!.toStringAsFixed(4)}, ${controller.longitude.value!.toStringAsFixed(4)}",
+                                    style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
                         const SizedBox(height: 20),
 
                         _buildChipSection(

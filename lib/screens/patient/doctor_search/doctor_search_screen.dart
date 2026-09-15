@@ -125,62 +125,81 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
   }
 
   Widget _buildSpecializationFilters() {
-    return Obx(
-      () => Container(
-        height: 40,
-        margin: const EdgeInsets.only(bottom: 8),
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          scrollDirection: Axis.horizontal,
-          itemCount: controller.specializations.length + 1,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Obx(() {
-                final isSelected = controller.selectedSpecialization.value == '';
-                return FilterChip(
-                  label: const Text('All Doctors'),
-                  selected: isSelected,
-                  onSelected: (_) => controller.clearFilters(),
-                  selectedColor: AppColors.primary,
-                  checkmarkColor: Colors.white,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
-                  ),
-                );
-              });
-            }
+    IconData getSpecIcon(String name) {
+      final n = name.toLowerCase();
+      if (n.isEmpty || n.contains('all')) return Icons.grid_view_rounded;
+      if (n.contains('ayurveda') || n.contains('ayur')) return Icons.nature_people_rounded;
+      if (n.contains('cardiology') || n.contains('heart')) return Icons.favorite_rounded;
+      if (n.contains('ent') || n.contains('ear') || n.contains('nose')) return Icons.hearing_rounded;
+      if (n.contains('pediatric') || n.contains('child') || n.contains('baby')) return Icons.child_care_rounded;
+      if (n.contains('general') || n.contains('physician')) return Icons.medical_services_rounded;
+      if (n.contains('dermatology') || n.contains('skin')) return Icons.clean_hands_rounded;
+      if (n.contains('ortho') || n.contains('bone')) return Icons.accessibility_new_rounded;
+      if (n.contains('dental') || n.contains('teeth')) return Icons.clean_hands_rounded;
+      return Icons.health_and_safety_rounded;
+    }
 
-            final spec = controller.specializations[index - 1];
-            return Obx(() {
-              final isSelected = controller.selectedSpecialization.value == spec;
-              return FilterChip(
-                label: Text(spec),
-                selected: isSelected,
-                onSelected: (_) => controller.onSpecializationFilter(spec),
-                selectedColor: AppColors.primary,
-                checkmarkColor: Colors.white,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: isSelected ? AppColors.primary : AppColors.primaryBorder),
-                ),
-              );
-            });
-          },
-        ),
+    return Container(
+      height: 100, // Increased height for vertical layout
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: controller.specializations.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 20),
+        itemBuilder: (context, index) {
+          final bool isAll = index == 0;
+          final String title = isAll ? 'All' : controller.specializations[index - 1];
+
+          return Obx(() {
+            final bool isSelected = isAll
+                ? controller.selectedSpecialization.value == ''
+                : controller.selectedSpecialization.value == title;
+
+            final IconData icon = getSpecIcon(isAll ? 'all' : title);
+
+            return GestureDetector(
+              onTap: () {
+                if (isAll) {
+                  controller.clearFilters();
+                } else {
+                  controller.onSpecializationFilter(title);
+                }
+              },
+              child: Column(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: isSelected ? AppColors.primary : AppColors.primaryBorder.withOpacity(0.6), width: 1.5),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 4))],
+                    ),
+                    child: Icon(icon, color: isSelected ? Colors.white : AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 65,
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          });
+        },
       ),
     );
   }

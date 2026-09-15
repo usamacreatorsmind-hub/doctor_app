@@ -20,6 +20,7 @@ class PatientDashboardController extends GetxController {
   final upcomingAppointment = Rxn<AppointmentModel>();
   final topDoctors = <DoctorModel>[].obs;
   final bloodGroup = 'N/A'.obs;
+  final banners = <String>[].obs;
 
   @override
   void onInit() {
@@ -48,6 +49,13 @@ class PatientDashboardController extends GetxController {
 
       final doctors = await _firestoreService.getTopDoctors(limit: 5);
       topDoctors.value = doctors;
+
+      try {
+        final fetchedBanners = await _firestoreService.getCarouselBanners();
+        banners.assignAll(fetchedBanners);
+      } catch (e) {
+        print("Banners fetch error: $e");
+      }
 
       final appointments = await _firestoreService.getPatientAppointments(user.uid);
       if (appointments.isNotEmpty) {
@@ -109,7 +117,7 @@ class PatientDashboardController extends GetxController {
   }
 
   void onDoctorBookTapped(DoctorModel doctor) => Get.toNamed(AppRoutes.doctorProfile, arguments: {'doctor': doctor});
-  void onViewAllAppointments() => changeTab(2); // Switch to History Tab
+  void onViewAllAppointments() => changeTab(3); // Switch to History Tab (Index 3 now)
   void onSeeAllDoctors() {
     selectedSpecIndex.value = -1;
     try {
@@ -121,7 +129,7 @@ class PatientDashboardController extends GetxController {
 
   void onSearchTapped() => changeTab(1); // Switch to Book Tab
   void onNotificationTapped() => Get.toNamed(AppRoutes.notifications);
-  void onProfileTapped() => changeTab(3); // Switch to Profile Tab
+  void onProfileTapped() => changeTab(4); // Switch to Profile Tab (Index 4 now)
 
   Future<void> onRefresh() async => await _loadDashboardData();
 }
