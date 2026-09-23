@@ -1,4 +1,3 @@
-import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../models/doctor_model.dart';
@@ -6,6 +5,7 @@ import '../../../models/review_model.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../utils/helper.dart';
 
 class DoctorProfileController extends GetxController {
@@ -14,6 +14,8 @@ class DoctorProfileController extends GetxController {
   late DoctorModel doctor;
   final isLoading = false.obs;
   final hospitalName = ''.obs;
+  final hospitalAddress = ''.obs;
+  final doctorAddress = ''.obs;
   final isAdminView = false.obs;
   final hospitalLatLng = Rxn<Map<String, double>>();
   
@@ -41,10 +43,33 @@ class DoctorProfileController extends GetxController {
     update();
     await Future.wait([
       _loadHospitalDetails(),
+      _loadDoctorAddress(),
       _loadReviews(),
     ]);
     isLoading.value = false;
     update();
+  }
+
+  Future<void> _loadDoctorAddress() async {
+    if (doctor.latitude != null && doctor.longitude != null) {
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(doctor.latitude!, doctor.longitude!);
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks[0];
+          List<String> parts = [];
+          if (place.name != null && place.name!.isNotEmpty && place.name != place.street) parts.add(place.name!);
+          if (place.street != null && place.street!.isNotEmpty) parts.add(place.street!);
+          if (place.subLocality != null && place.subLocality!.isNotEmpty) parts.add(place.subLocality!);
+          if (place.locality != null && place.locality!.isNotEmpty) parts.add(place.locality!);
+          if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) parts.add(place.administrativeArea!);
+          if (place.postalCode != null && place.postalCode!.isNotEmpty) parts.add(place.postalCode!);
+
+          doctorAddress.value = parts.join(', ');
+        }
+      } catch (e) {
+        debugPrint("Error geocoding doctor coords: $e");
+      }
+    }
   }
 
   Future<void> _loadHospitalDetails() async {
@@ -52,12 +77,37 @@ class DoctorProfileController extends GetxController {
       final hospital = await _firestoreService.getHospital(doctor.hospitalId);
       if (hospital != null) {
         hospitalName.value = hospital.hospitalName;
+        final parts = [hospital.address, hospital.city, hospital.state, hospital.pincode]
+            .where((e) => e.isNotEmpty)
+            .toList();
+        hospitalAddress.value = parts.join(', ');
+
         if (hospital.latitude != null && hospital.longitude != null) {
           hospitalLatLng.value = {'lat': hospital.latitude!, 'lng': hospital.longitude!};
+          if (doctorAddress.value.isEmpty) {
+            try {
+              List<Placemark> placemarks = await placemarkFromCoordinates(hospital.latitude!, hospital.longitude!);
+              if (placemarks.isNotEmpty) {
+                Placemark place = placemarks[0];
+                List<String> pParts = [];
+                if (place.street != null && place.street!.isNotEmpty) pParts.add(place.street!);
+                if (place.subLocality != null && place.subLocality!.isNotEmpty) pParts.add(place.subLocality!);
+                if (place.locality != null && place.locality!.isNotEmpty) pParts.add(place.locality!);
+                if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) pParts.add(place.administrativeArea!);
+                if (place.postalCode != null && place.postalCode!.isNotEmpty) pParts.add(place.postalCode!);
+
+                if (pParts.isNotEmpty && hospitalAddress.value.isEmpty) {
+                  hospitalAddress.value = pParts.join(', ');
+                }
+              }
+            } catch (e) {
+              debugPrint("Error reverse geocoding hospital coords: $e");
+            }
+          }
         }
       }
     } catch (e) {
-      print("Error loading hospital: $e");
+      debugPrint("Error loading hospital: $e");
     }
   }
 

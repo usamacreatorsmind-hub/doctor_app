@@ -27,6 +27,8 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                     const SizedBox(height: 20),
                     _buildStats(),
                     const SizedBox(height: 24),
+                    _buildLocationCard(),
+                    const SizedBox(height: 24),
                     _buildSectionCard(
                       title: 'Biography',
                       child: Text(
@@ -252,6 +254,86 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
         ),
       ),
     );
+  }
+
+  Widget _buildLocationCard() {
+    return Obx(() {
+      final hName = controller.hospitalName.value;
+      final hAddr = controller.hospitalAddress.value;
+      final dAddr = controller.doctorAddress.value;
+
+      String displayAddr = '';
+      if (dAddr.isNotEmpty) {
+        displayAddr = dAddr;
+      } else if (hAddr.isNotEmpty) {
+        displayAddr = hAddr;
+      }
+
+      final bool hasClinicName = controller.doctor.clinicName != null && controller.doctor.clinicName!.isNotEmpty;
+      final String headerTitle = hasClinicName
+          ? controller.doctor.clinicName!
+          : (hName.isNotEmpty ? hName : 'Practice Location');
+
+      return _buildSectionCard(
+        title: 'Practice Location & Address',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.local_hospital_rounded, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    headerTitle,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                ),
+              ],
+            ),
+            if (displayAddr.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.location_on_rounded, size: 18, color: Colors.redAccent),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      displayAddr,
+                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: controller.onNavigateDirections,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.directions_rounded, color: Colors.green, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Get Directions on Google Maps',
+                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _chip(String label, {Color color = AppColors.primary}) {

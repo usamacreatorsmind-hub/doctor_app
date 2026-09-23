@@ -44,7 +44,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
               SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildProfileHeader(),
+                    _buildProfileHeader(context),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                       child: controller.isEditing.value ? _buildEditForm() : _buildProfileDetails(),
@@ -60,7 +60,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     final profile = controller.doctorProfile.value;
     return Container(
       width: double.infinity,
@@ -72,30 +72,30 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
         children: [
           const SizedBox(height: 10),
           Obx(
-            () => Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                  child: CircleAvatar(
-                    radius: 55,
-                    backgroundColor: Colors.white,
-                    backgroundImage: controller.pickedImage.value != null
-                        ? FileImage(controller.pickedImage.value!) as ImageProvider
-                        : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
-                        ? NetworkImage(profile.photoUrl!)
-                        : null,
-                    child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
-                        ? const Icon(Icons.person, color: Colors.grey, size: 55)
-                        : null,
+            () => GestureDetector(
+              onTap: controller.isEditing.value ? () => controller.showImagePickerBottomSheet(context) : null,
+              child: Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                    child: CircleAvatar(
+                      radius: 55,
+                      backgroundColor: Colors.white,
+                      backgroundImage: controller.pickedImage.value != null
+                          ? FileImage(controller.pickedImage.value!) as ImageProvider
+                          : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
+                          ? NetworkImage(profile.photoUrl!)
+                          : null,
+                      child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
+                          ? const Icon(Icons.person, color: Colors.grey, size: 55)
+                          : null,
+                    ),
                   ),
-                ),
-                if (controller.isEditing.value)
-                  Positioned(
-                    bottom: 0,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: controller.pickImage,
+                  if (controller.isEditing.value)
+                    Positioned(
+                      bottom: 0,
+                      right: 4,
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -106,8 +106,8 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                         child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary, size: 20),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -213,6 +213,32 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                 _buildHospitalViewChips('Associated Hospitals', profile.hospitalIds),
             ],
           ),
+        ),
+
+        _buildSectionCard(
+          title: 'Practice Location & Address',
+          child: Obx(() {
+            final addr = controller.fetchedAddress.value;
+            final lat = controller.latitude.value;
+            final lng = controller.longitude.value;
+
+            final displayAddr = addr.isNotEmpty
+                ? addr
+                : (lat != null && lng != null
+                    ? 'Coordinates: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}'
+                    : 'Location not captured yet');
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoTile(
+                  Icons.location_on_rounded,
+                  'Address Details',
+                  displayAddr,
+                ),
+              ],
+            );
+          }),
         ),
 
         _buildSectionCard(
@@ -393,19 +419,68 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
         _buildSectionCard(
           title: 'Practice Location',
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ElevatedButton.icon(
-                onPressed: controller.getCurrentLocation,
-                icon: const Icon(Icons.my_location_rounded, size: 18),
-                label: const Text('Capture Current Location 📍', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.hospitalIcon,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  minimumSize: const Size(double.infinity, 45),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              if (controller.isEditing.value)
+                ElevatedButton.icon(
+                  onPressed: controller.getCurrentLocation,
+                  icon: const Icon(Icons.my_location_rounded, size: 18),
+                  label: const Text('Capture Current Location 📍', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.hospitalIcon,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
-              ),
+              Obx(() {
+                final lat = controller.latitude.value;
+                final lng = controller.longitude.value;
+                final addr = controller.fetchedAddress.value;
+
+                if (lat == null || lng == null) {
+                  return const SizedBox.shrink();
+                }
+
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, size: 18, color: AppColors.primary),
+                          SizedBox(width: 6),
+                          Text(
+                            'Captured Location Details:',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                      if (addr.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          addr,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Coordinates: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: 12),
               if (controller.doctorProfile.value?.practiceType == 'clinic')
                 _buildTextField('Clinic Name', controller.clinicNameController, Icons.local_pharmacy_outlined)

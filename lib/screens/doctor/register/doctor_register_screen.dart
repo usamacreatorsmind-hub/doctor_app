@@ -31,7 +31,9 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _sectionTitle('Personal & Contact Info'),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+                        _buildPhotoSection(context),
+                        const SizedBox(height: 16),
                         _buildInputField(
                           label: 'Full Name',
                           hint: 'Dr. John Doe',
@@ -627,6 +629,58 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _buildPhotoSection(BuildContext context) {
+    return Center(
+      child: GestureDetector(
+        onTap: () => controller.showImagePickerBottomSheet(context),
+        child: Stack(
+          children: [
+            Obx(() {
+              final file = controller.pickedImage.value;
+              return Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primarySurface,
+                  border: Border.all(color: AppColors.primary, width: 2),
+                  image: file != null
+                      ? DecorationImage(
+                          image: FileImage(file),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: file == null ? const Icon(Icons.person_rounded, size: 48, color: AppColors.primary) : null,
+              );
+            }),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

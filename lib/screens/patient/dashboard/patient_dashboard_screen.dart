@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../models/doctor_model.dart';
+import '../../../widgets/animated_search_hint.dart';
 import '../doctor_search/doctor_search_screen.dart';
 import '../appointments/patient_appointments_screen.dart';
 import '../patient_profile/patient_profile_screen.dart';
@@ -266,6 +267,8 @@ class PatientDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildSearchBar(PatientDashboardController controller) {
+    final hints = ['Search Doctor', 'Search Disease', 'Search Hospital', 'Search Symptoms'];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: GestureDetector(
@@ -273,11 +276,16 @@ class PatientDashboardScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
-              SizedBox(width: 10),
-              Text('Search doctor, symptom, disease...', style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: AnimatedSearchHint(
+                  hints: hints,
+                  textStyle: const TextStyle(fontSize: 13, color: Colors.black87),
+                ),
+              ),
             ],
           ),
         ),
@@ -535,7 +543,7 @@ class PatientDashboardScreen extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
-              'Connect with the best doctors near you with Aarogya Pass. Book appointments, track live queues, and manage all your health records in one place.',
+              'Connect with the best doctors near you with Ayu Veda Care. Book appointments, track live queues, and manage all your health records in one place.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Color(0xFF557A74), height: 1.5, fontWeight: FontWeight.w500),
             ),

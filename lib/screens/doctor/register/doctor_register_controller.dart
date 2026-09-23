@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../Repository/FirestoreService.dart';
@@ -8,6 +11,7 @@ import '../../../Repository/auth_repository.dart';
 import '../../../models/user_model.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/hospital_model.dart';
+import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
 import '../../Login/login_controller.dart';
@@ -16,6 +20,10 @@ class DoctorRegisterController extends GetxController {
   final formKey = GlobalKey<FormState>();
   final FirestoreService _firestoreService = FirestoreService();
   final AuthRepository _authRepository = AuthRepository();
+  final FirebaseStorage _storage = FirebaseStorage.instanceFor(bucket: 'gs://ayuveda-care-42292.firebasestorage.app');
+  final ImagePicker _picker = ImagePicker();
+
+  final pickedImage = Rxn<File>();
 
   // Controllers
   final nameController = TextEditingController();
@@ -218,6 +226,80 @@ class DoctorRegisterController extends GetxController {
     }
   }
 
+  void showImagePickerBottomSheet(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Profile Picture',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
+                child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+              ),
+              title: const Text('Take Photo from Camera'),
+              onTap: () {
+                Get.back();
+                pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
+                child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+              ),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Get.back();
+                pickImage(ImageSource.gallery);
+              },
+            ),
+            if (pickedImage.value != null)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(color: Color(0xFFFFEBEE), shape: BoxShape.circle),
+                  child: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                ),
+                title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Get.back();
+                  pickedImage.value = null;
+                  update();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: source, imageQuality: 70, maxWidth: 800, maxHeight: 800);
+      if (image != null) {
+        pickedImage.value = File(image.path);
+        update();
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+      AppSnackBar.show('Failed to pick image: $e');
+    }
+  }
+
   Future<void> onRegisterPressed() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -249,6 +331,19 @@ class DoctorRegisterController extends GetxController {
 
       if (userCredential != null && userCredential.user != null) {
         final String uid = userCredential.user!.uid;
+
+        // Upload Profile Photo if selected
+        String? uploadedPhotoUrl;
+        if (pickedImage.value != null) {
+          try {
+            final ref = _storage.ref().child('doctor_profiles').child(uid).child('profile.jpg');
+            await ref.putFile(pickedImage.value!);
+            uploadedPhotoUrl = await ref.getDownloadURL();
+          } catch (e) {
+            debugPrint("Doctor photo upload error: $e");
+            AppSnackBar.show('Photo upload error: $e');
+          }
+        }
 
         String finalHospitalId = '';
         List<String> finalHospitalIds = [];
@@ -298,6 +393,7 @@ class DoctorRegisterController extends GetxController {
           gender: selectedGender.value,
           languagesKnown: selectedLanguages.toList(),
           biography: bioController.text.trim(),
+          photoUrl: uploadedPhotoUrl,
           symptomsCovered: selectedSymptoms.toList(),
           diseasesCovered: selectedDiseases.toList(),
           consultationMode: selectedConsultationMode.value,

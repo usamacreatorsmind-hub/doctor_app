@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
+import '../../../models/user_model.dart';
 import 'patient_profile_controller.dart';
 
 class PatientProfileScreen extends GetView<PatientProfileController> {
@@ -102,13 +103,19 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
     );
   }
 
-  Widget _buildProfileHeader(dynamic user) {
+  Widget _buildProfileHeader(UserModel user) {
+    final profile = controller.profileModel.value;
+    final String? photoUrl = (profile?.profilePhoto != null && profile!.profilePhoto!.isNotEmpty)
+        ? profile.profilePhoto
+        : null;
+
     return Column(
       children: [
-        const CircleAvatar(
+        CircleAvatar(
           radius: 50,
           backgroundColor: AppColors.primarySurface,
-          child: Icon(Icons.person, size: 50, color: AppColors.primary),
+          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+          child: photoUrl == null ? const Icon(Icons.person, size: 50, color: AppColors.primary) : null,
         ),
         const SizedBox(height: 16),
         Text(
@@ -119,62 +126,80 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
       ],
     );
   }
+}
 
-  Widget _buildActionCard({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: AppColors.primary, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoSection(String title, List<Widget> children) {
-    return Container(
+Widget _buildActionCard({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Row(
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: AppColors.primary, size: 24),
           ),
-          const Divider(height: 24),
-          ...children,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Padding(
+Widget _buildInfoSection(String title, List<Widget> children) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+        ),
+        const Divider(height: 24),
+        ...children,
+      ],
+    ),
+  );
+}
+
+Widget _infoRow(IconData icon, String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.textSecondary),
+        const SizedBox(width: 12),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        const Spacer(),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+      ],
+    ),
+  );
+}
+
+Widget _actionRow(IconData icon, String label, VoidCallback onTap) {
+  return InkWell(
+    onTap: onTap,
+    child: Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
@@ -182,62 +207,44 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
           const SizedBox(width: 12),
           Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+          const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textHint),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _actionRow(IconData icon, String label, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: AppColors.textSecondary),
-            const SizedBox(width: 12),
-            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-            const Spacer(),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textHint),
-          ],
+Widget _buildMedicalHistory(dynamic profile) {
+  final history = profile?.medicalHistory ?? [];
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Medical History',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
         ),
-      ),
-    );
-  }
-
-  Widget _buildMedicalHistory(dynamic profile) {
-    final history = profile?.medicalHistory ?? [];
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Medical History',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+        const Divider(height: 24),
+        if (history.isEmpty)
+          const Text('No medical history added', style: TextStyle(color: AppColors.textHint, fontSize: 12))
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: history
+                .map<Widget>(
+                  (item) => Chip(
+                    label: Text(item, style: const TextStyle(fontSize: 12)),
+                    backgroundColor: AppColors.bgPage,
+                    side: BorderSide.none,
+                  ),
+                )
+                .toList(),
           ),
-          const Divider(height: 24),
-          if (history.isEmpty)
-            const Text('No medical history added', style: TextStyle(color: AppColors.textHint, fontSize: 12))
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: history
-                  .map<Widget>(
-                    (item) => Chip(
-                      label: Text(item, style: const TextStyle(fontSize: 12)),
-                      backgroundColor: AppColors.bgPage,
-                      side: BorderSide.none,
-                    ),
-                  )
-                  .toList(),
-            ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }

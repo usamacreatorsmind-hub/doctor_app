@@ -169,6 +169,7 @@ class DoctorModel {
     String? hospitalId,
     List<String>? hospitalIds,
     String? status,
+    String? photoUrl,
     double? latitude,
     double? longitude,
   }) {
@@ -188,7 +189,7 @@ class DoctorModel {
       gender: gender,
       languagesKnown: languagesKnown,
       biography: biography,
-      photoUrl: photoUrl,
+      photoUrl: photoUrl ?? this.photoUrl,
       symptomsCovered: symptomsCovered,
       diseasesCovered: diseasesCovered,
       consultationMode: consultationMode,

@@ -7,10 +7,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../Repository/auth_repository.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/hospital_model.dart';
+import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
 
@@ -18,7 +20,7 @@ class DoctorSelfProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
   final AuthRepository _authRepository = AuthRepository();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instanceFor(bucket: 'gs://ayuveda-care-42292.firebasestorage.app');
   final ImagePicker _picker = ImagePicker();
 
   final isLoading = false.obs;
@@ -28,6 +30,7 @@ class DoctorSelfProfileController extends GetxController {
 
   final latitude = Rxn<double>();
   final longitude = Rxn<double>();
+  final fetchedAddress = ''.obs;
 
   // Master Data Lists
   final hospitals = <HospitalModel>[].obs;
@@ -188,6 +191,38 @@ class DoctorSelfProfileController extends GetxController {
     pickedImage.value = null;
     latitude.value = profile.latitude;
     longitude.value = profile.longitude;
+    if (profile.latitude != null && profile.longitude != null) {
+      fetchAddressFromCoords(profile.latitude!, profile.longitude!);
+    }
+  }
+
+  Future<void> fetchAddressFromCoords(double lat, double lng) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+
+        String name = place.name ?? "";
+        String street = place.street ?? "";
+        String subLocality = place.subLocality ?? "";
+        String locality = place.locality ?? "";
+        String administrativeArea = place.administrativeArea ?? "";
+        String postalCode = place.postalCode ?? "";
+
+        List<String> addressParts = [];
+        if (name.isNotEmpty && name != street) addressParts.add(name);
+        if (street.isNotEmpty) addressParts.add(street);
+        if (subLocality.isNotEmpty) addressParts.add(subLocality);
+        if (locality.isNotEmpty) addressParts.add(locality);
+        if (administrativeArea.isNotEmpty) addressParts.add(administrativeArea);
+        if (postalCode.isNotEmpty) addressParts.add(postalCode);
+
+        fetchedAddress.value = addressParts.join(", ");
+        update();
+      }
+    } catch (e) {
+      debugPrint("Error reverse geocoding coords: $e");
+    }
   }
 
   Future<void> getCurrentLocation() async {
@@ -219,13 +254,15 @@ class DoctorSelfProfileController extends GetxController {
       update();
 
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       latitude.value = position.latitude;
       longitude.value = position.longitude;
 
-      AppSnackBar.show('Location Fetched: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}');
+      await fetchAddressFromCoords(position.latitude, position.longitude);
+
+      AppSnackBar.show('Location & Address Captured Successfully 📍');
     } catch (e) {
       debugPrint("Error getting location: $e");
       AppSnackBar.show('Failed to get location: $e');
@@ -243,11 +280,80 @@ class DoctorSelfProfileController extends GetxController {
     update();
   }
 
-  Future<void> pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 50, maxWidth: 800);
-    if (image != null) {
-      pickedImage.value = File(image.path);
-      update();
+  void showImagePickerBottomSheet(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Profile Picture',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
+                child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+              ),
+              title: const Text('Take Photo from Camera'),
+              onTap: () {
+                Get.back();
+                pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
+                child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+              ),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Get.back();
+                pickImage(ImageSource.gallery);
+              },
+            ),
+            if (pickedImage.value != null || (doctorProfile.value?.photoUrl != null && doctorProfile.value!.photoUrl!.isNotEmpty))
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(color: Color(0xFFFFEBEE), shape: BoxShape.circle),
+                  child: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                ),
+                title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Get.back();
+                  pickedImage.value = null;
+                  if (doctorProfile.value != null) {
+                    doctorProfile.value = doctorProfile.value!.copyWith(photoUrl: '');
+                  }
+                  update();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: source, imageQuality: 70, maxWidth: 800, maxHeight: 800);
+      if (image != null) {
+        pickedImage.value = File(image.path);
+        update();
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+      AppSnackBar.show('Failed to pick image: $e');
     }
   }
 

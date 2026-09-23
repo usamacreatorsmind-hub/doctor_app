@@ -297,29 +297,60 @@ class _Step1Personal extends StatelessWidget {
 
   Widget _buildPhotoSection(ProfileSetupController controller) {
     return Center(
-      child: Stack(
-        children: [
-          Container(
-            width: 90,
-            height: 90,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primarySurface,
-              border: Border.all(color: AppColors.primaryBorder, width: 1.5),
+      child: GestureDetector(
+        onTap: () => controller.showImagePickerBottomSheet(context),
+        child: Stack(
+          children: [
+            Obx(() {
+              ImageProvider? imageProvider;
+              if (controller.pickedImage.value != null) {
+                imageProvider = FileImage(controller.pickedImage.value!);
+              } else if (controller.profilePhotoUrl.value.isNotEmpty) {
+                imageProvider = NetworkImage(controller.profilePhotoUrl.value);
+              }
+
+              return Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primarySurface,
+                  border: Border.all(color: AppColors.primary, width: 2),
+                  image: imageProvider != null
+                      ? DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: imageProvider == null
+                    ? const Icon(Icons.person_rounded, size: 48, color: AppColors.primary)
+                    : null,
+              );
+            }),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+              ),
             ),
-            child: const Icon(Icons.person_rounded, size: 44, color: AppColors.primary),
-          ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primary),
-              child: const Icon(Icons.camera_alt_rounded, size: 15, color: Colors.white),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

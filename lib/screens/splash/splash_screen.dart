@@ -11,7 +11,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder(
-      init:Get.put(SplashController()),
+      init: Get.put(SplashController()),
       builder: (controller) {
         return Scaffold(
           body: Container(
@@ -50,26 +50,15 @@ class _LogoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120, height: 120,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.15),
-      ),
+      width: 150,
+      height: 150,
+
       child: Center(
         child: Container(
-          width: 88, height: 88,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.25),
-          ),
-          child: ClipOval(
-            child: Image.asset(
-              AppImages.appLogo,
-              fit: BoxFit.cover,
-              width: 88,
-              height: 88,
-            ),
-          ),
+          width: 150,
+          height: 150,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.25)),
+          child: ClipOval(child: Image.asset(AppImages.appLogo, fit: BoxFit.cover, width: 88, height: 88)),
         ),
       ),
     );
@@ -84,25 +73,16 @@ class _AnimatedDotsWidget extends StatefulWidget {
   State<_AnimatedDotsWidget> createState() => _AnimatedDotsWidgetState();
 }
 
-class _AnimatedDotsWidgetState extends State<_AnimatedDotsWidget>
-    with TickerProviderStateMixin {
+class _AnimatedDotsWidgetState extends State<_AnimatedDotsWidget> with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
 
   @override
   void initState() {
     super.initState();
-    _controllers = List.generate(
-      3,
-      (i) => AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 600),
-      ),
-    );
+    _controllers = List.generate(3, (i) => AnimationController(vsync: this, duration: const Duration(milliseconds: 600)));
     _animations = _controllers
-        .map((c) => Tween<double>(begin: 0.3, end: 1.0).animate(
-              CurvedAnimation(parent: c, curve: Curves.easeInOut),
-            ))
+        .map((c) => Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(parent: c, curve: Curves.easeInOut)))
         .toList();
 
     for (int i = 0; i < 3; i++) {
@@ -127,11 +107,9 @@ class _AnimatedDotsWidgetState extends State<_AnimatedDotsWidget>
           animation: _animations[i],
           builder: (_, __) => Container(
             margin: const EdgeInsets.symmetric(horizontal: 5),
-            width: 10, height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(_animations[i].value),
-            ),
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(_animations[i].value)),
           ),
         );
       }),

@@ -1,20 +1,28 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../models/patient_profile_model.dart';
 import '../../../models/user_model.dart';
+import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../Repository/FirestoreService.dart';
 import '../../../utils/helper.dart';
-import '../../Login/login_controller.dart';
 
 class ProfileSetupController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instanceFor(bucket: 'gs://ayuveda-care-42292.firebasestorage.app');
+  final ImagePicker _picker = ImagePicker();
 
   final currentStep = 0.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
+
+  final pickedImage = Rxn<File>();
+  final profilePhotoUrl = ''.obs;
 
   // Form Keys
   final step1FormKey = GlobalKey<FormState>();
@@ -89,6 +97,81 @@ class ProfileSetupController extends GetxController {
     super.onClose();
   }
 
+  void showImagePickerBottomSheet(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Profile Picture',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
+                child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+              ),
+              title: const Text('Take Photo from Camera'),
+              onTap: () {
+                Get.back();
+                pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
+                child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+              ),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Get.back();
+                pickImage(ImageSource.gallery);
+              },
+            ),
+            if (pickedImage.value != null || profilePhotoUrl.value.isNotEmpty)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(color: Color(0xFFFFEBEE), shape: BoxShape.circle),
+                  child: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                ),
+                title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Get.back();
+                  pickedImage.value = null;
+                  profilePhotoUrl.value = '';
+                  update();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: source, imageQuality: 70, maxWidth: 800, maxHeight: 800);
+      if (image != null) {
+        pickedImage.value = File(image.path);
+        update();
+      }
+    } catch (e) {
+      print("Error picking image: $e");
+      AppSnackBar.show('Failed to pick image: $e');
+    }
+  }
+
   Future<void> _loadExistingProfile() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -107,6 +190,9 @@ class ProfileSetupController extends GetxController {
       // 2. Load detailed profile
       final profile = await _firestoreService.getPatientProfile(user.uid);
       if (profile != null) {
+        if (profile.profilePhoto != null && profile.profilePhoto!.isNotEmpty) {
+          profilePhotoUrl.value = profile.profilePhoto!;
+        }
         // Step 1: Text Fields
         dobController.text = profile.dob ?? '';
         addressController.text = profile.address ?? '';
@@ -299,11 +385,31 @@ class ProfileSetupController extends GetxController {
     isSaving.value = true;
     update();
     try {
+      String? uploadedUrl = profilePhotoUrl.value.isNotEmpty ? profilePhotoUrl.value : null;
+
+      // Upload newly picked image to Firebase Storage if present
+      if (pickedImage.value != null) {
+        try {
+          final ref = _storage.ref().child('patient_profiles').child(user.uid).child('profile.jpg');
+          await ref.putFile(pickedImage.value!);
+          uploadedUrl = await ref.getDownloadURL();
+          profilePhotoUrl.value = uploadedUrl;
+        } catch (e) {
+          debugPrint("PatientProfile Storage Error: $e");
+          AppSnackBar.show('Photo upload error: $e');
+        }
+      }
+
       // 1. Update basic user info in users collection
-      await _firestoreService.updateUser(user.uid, {'name': nameController.text.trim(), 'mobile': mobileController.text.trim()});
+      final userUpdates = <String, dynamic>{'name': nameController.text.trim(), 'mobile': mobileController.text.trim()};
+      if (uploadedUrl != null) {
+        userUpdates['photoUrl'] = uploadedUrl;
+      }
+      await _firestoreService.updateUser(user.uid, userUpdates);
 
       // 2. Save profile in profile collection
       final profile = PatientProfileModel(
+        profilePhoto: uploadedUrl,
         dob: dobController.text,
         gender: selectedGender.value,
         bloodGroup: selectedBloodGroup.value,
@@ -324,7 +430,7 @@ class ProfileSetupController extends GetxController {
 
       await _firestoreService.savePatientProfile(user.uid, profile);
       AppSnackBar.show('Profile updated successfully');
-      Get.offAllNamed(AppRoutes.login, arguments: {'role': LoginRole.patient});
+      Get.offAllNamed(AppRoutes.patientDashboard);
     } catch (e) {
       AppSnackBar.show('Failed to save profile: $e');
     } finally {

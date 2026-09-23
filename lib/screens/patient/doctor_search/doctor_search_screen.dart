@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../models/doctor_model.dart';
+import '../../../widgets/animated_search_hint.dart';
 import 'doctor_search_controller.dart';
 
 class DoctorSearchScreen extends GetView<DoctorSearchController> {
@@ -104,23 +105,49 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
   }
 
   Widget _buildSearchBar() {
+    final hints = [
+      'Search Doctor',
+      'Search Disease',
+      'Search Hospital',
+      'Search Symptoms',
+    ];
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: TextField(
-        controller: controller.searchController,
-        onChanged: controller.onSearchChanged,
-        decoration: InputDecoration(
-          hintText: 'Search doctor, symptoms, disease...',
-          hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
-          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-          suffixIcon: IconButton(icon: const Icon(Icons.clear_rounded), onPressed: controller.clearFilters),
-          filled: true,
-          fillColor: AppColors.bgPage,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
-        ),
-      ),
+      child: Obx(() {
+        final isQueryEmpty = controller.searchQuery.value.isEmpty;
+
+        return Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            TextField(
+              controller: controller.searchController,
+              onChanged: controller.onSearchChanged,
+              decoration: InputDecoration(
+                hintText: isQueryEmpty ? '' : null,
+                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                suffixIcon: IconButton(icon: const Icon(Icons.clear_rounded), onPressed: controller.clearFilters),
+                filled: true,
+                fillColor: AppColors.bgPage,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+            if (isQueryEmpty)
+              Positioned(
+                left: 48,
+                right: 48,
+                child: IgnorePointer(
+                  child: AnimatedSearchHint(
+                    hints: hints,
+                    textStyle: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                ),
+              ),
+          ],
+        );
+      }),
     );
   }
 
@@ -326,3 +353,5 @@ class _DoctorResultCard extends StatelessWidget {
     );
   }
 }
+
+
