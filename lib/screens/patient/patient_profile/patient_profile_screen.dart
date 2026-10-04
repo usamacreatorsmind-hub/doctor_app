@@ -105,17 +105,15 @@ class PatientProfileScreen extends GetView<PatientProfileController> {
 
   Widget _buildProfileHeader(UserModel user) {
     final profile = controller.profileModel.value;
-    final String? photoUrl = (profile?.profilePhoto != null && profile!.profilePhoto!.isNotEmpty)
-        ? profile.profilePhoto
-        : null;
+    final imageProvider = getImageProvider(profile?.profilePhoto);
 
     return Column(
       children: [
         CircleAvatar(
           radius: 50,
           backgroundColor: AppColors.primarySurface,
-          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-          child: photoUrl == null ? const Icon(Icons.person, size: 50, color: AppColors.primary) : null,
+          backgroundImage: imageProvider,
+          child: imageProvider == null ? const Icon(Icons.person, size: 50, color: AppColors.primary) : null,
         ),
         const SizedBox(height: 16),
         Text(

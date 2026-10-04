@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/app_text_styles.dart';
+import '../../../utils/helper.dart';
+import '../../../widgets/address_autocomplete_field.dart';
 import 'booking_confirm_controller.dart';
 
 class BookingConfirmScreen extends GetView<BookingConfirmController> {
@@ -55,34 +56,39 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: AppColors.primarySurface,
-              borderRadius: BorderRadius.circular(12),
-              image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty)
-                  ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover)
-                  : null,
-            ),
-            child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty)
-                ? const Icon(Icons.person, color: AppColors.primary, size: 35)
-                : null,
-          ),
+          (() {
+            final imageProvider = getImageProvider(doctor.photoUrl);
+            return Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(12),
+                image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
+              ),
+              child: imageProvider == null ? const Icon(Icons.person, color: AppColors.primary, size: 35) : null,
+            );
+          })(),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(doctor.doctorName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                Text('${doctor.qualification.join(', ')} - ${doctor.specialization.join(', ')}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                Obx(() => Text(controller.hospitalName.value, style: const TextStyle(fontSize: 12, color: AppColors.textHint))), // Hospital Name
+                Text(
+                  doctor.doctorName,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                Text(
+                  '${doctor.qualification.join(', ')} - ${doctor.specialization.join(', ')}',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                Obx(
+                  () => Text(controller.hospitalName.value, style: const TextStyle(fontSize: 12, color: AppColors.textHint)),
+                ), // Hospital Name
               ],
             ),
           ),
@@ -97,34 +103,37 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Booking for', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const Text(
+            'Booking for',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          ),
           const SizedBox(height: 12),
-          Obx(() => Row(
-                children: [
-                  Expanded(
-                    child: _selectionChip(
-                      label: 'Myself',
-                      isSelected: controller.isForSelf.value,
-                      onTap: () => controller.isForSelf.value = true,
-                    ),
+          Obx(
+            () => Row(
+              children: [
+                Expanded(
+                  child: _selectionChip(
+                    label: 'Myself',
+                    isSelected: controller.isForSelf.value,
+                    onTap: () => controller.isForSelf.value = true,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _selectionChip(
-                      label: 'Someone Else',
-                      isSelected: !controller.isForSelf.value,
-                      onTap: () => controller.isForSelf.value = false,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _selectionChip(
+                    label: 'Someone Else',
+                    isSelected: !controller.isForSelf.value,
+                    onTap: () => controller.isForSelf.value = false,
                   ),
-                ],
-              )),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -160,20 +169,23 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Patient Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const Text(
+            'Patient Details',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          ),
           const Divider(height: 24),
           _textField(label: 'Patient Name', controller: controller.otherNameController, hint: 'Enter patient full name'),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _textField(label: 'Age', controller: controller.otherAgeController, hint: 'Age', keyboardType: TextInputType.number)),
+              Expanded(
+                child: _textField(label: 'Age', controller: controller.otherAgeController, hint: 'Age', keyboardType: TextInputType.number),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -181,24 +193,31 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
                   children: [
                     const Text('Gender', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                     const SizedBox(height: 8),
-                    Obx(() => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
+                    Obx(
+                      () => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: controller.selectedGender.value,
+                            isExpanded: true,
+                            items: controller.genders
+                                .map(
+                                  (g) => DropdownMenuItem(
+                                    value: g,
+                                    child: Text(g, style: const TextStyle(fontSize: 14)),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) => controller.selectedGender.value = val!,
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: controller.selectedGender.value,
-                              isExpanded: true,
-                              items: controller.genders
-                                  .map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 14))))
-                                  .toList(),
-                              onChanged: (val) => controller.selectedGender.value = val!,
-                            ),
-                          ),
-                        )),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -210,32 +229,48 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
             children: [
               const Text('Relationship', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
               const SizedBox(height: 8),
-              Obx(() => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+              Obx(
+                () => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: controller.selectedRelationship.value,
+                      isExpanded: true,
+                      items: controller.relationships
+                          .map(
+                            (r) => DropdownMenuItem(
+                              value: r,
+                              child: Text(r, style: const TextStyle(fontSize: 14)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) => controller.selectedRelationship.value = val!,
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: controller.selectedRelationship.value,
-                        isExpanded: true,
-                        items: controller.relationships
-                            .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 14))))
-                            .toList(),
-                        onChanged: (val) => controller.selectedRelationship.value = val!,
-                      ),
-                    ),
-                  )),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           _textField(label: 'Parents/Guardian Name', controller: controller.otherGuardianController, hint: 'Enter guardian name'),
           const SizedBox(height: 16),
-          _textField(label: 'Address', controller: controller.otherAddressController, hint: 'Enter full address'),
+          AddressAutocompleteField(
+            label: 'Address',
+            hint: 'Start typing area (e.g. Boring Road, Gomti Nagar)...',
+            controller: controller.otherAddressController,
+          ),
           const SizedBox(height: 16),
-          _textField(label: 'Mobile Number (Optional)', controller: controller.otherMobileController, hint: 'Enter mobile', keyboardType: TextInputType.phone),
+          _textField(
+            label: 'Mobile Number (Optional)',
+            controller: controller.otherMobileController,
+            hint: 'Enter mobile',
+            keyboardType: TextInputType.phone,
+          ),
         ],
       ),
     );
@@ -256,8 +291,14 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
             filled: true,
             fillColor: Colors.grey.shade50,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryBorder),
+            ),
           ),
         ),
       ],
@@ -270,14 +311,15 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Appointment Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const Text(
+            'Appointment Details',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          ),
           const Divider(height: 24),
           _detailRow(Icons.calendar_today_rounded, 'Date', DateFormat('MMM dd, yyyy').format(DateTime.parse(controller.selectedDateStr))),
           const SizedBox(height: 10),
@@ -298,7 +340,10 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
         const SizedBox(width: 12),
         Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         const Spacer(),
-        Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 13)),
+        Text(
+          value,
+          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500, fontSize: 13),
+        ),
       ],
     );
   }
@@ -307,7 +352,10 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Your Symptoms (Optional)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        const Text(
+          'Your Symptoms (Optional)',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+        ),
         const SizedBox(height: 12),
         TextFormField(
           onChanged: controller.updatePatientSymptoms,
@@ -316,8 +364,14 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
             hintText: 'Describe your symptoms...',
             filled: true,
             fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryBorder),
+            ),
           ),
         ),
       ],
@@ -325,33 +379,29 @@ class BookingConfirmScreen extends GetView<BookingConfirmController> {
   }
 
   Widget _buildBottomAction() {
-    return Obx(() => Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5))
-            ],
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: controller.isLoading.value ? null : controller.confirmBooking,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: controller.isLoading.value
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Confirm & Pay', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+    return Obx(
+      () => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: controller.isLoading.value ? null : controller.confirmBooking,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+            child: controller.isLoading.value
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text('Confirm & Pay', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

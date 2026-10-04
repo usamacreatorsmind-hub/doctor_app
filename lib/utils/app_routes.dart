@@ -25,6 +25,8 @@ class AppRoutes {
   static const String bookingConfirm = '/booking-confirm';
   static const String payment        = '/payment';
   static const String bookingSuccess = '/booking-success';
+  static const String collectPayment = '/collect-payment';
+  static const String collectPaymentSuccess = '/collect-payment-success';
 
   // Doctor
   static const String doctorDashboard = '/doctor-dashboard';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/helper.dart';
 import 'doctor_profile_controller.dart';
 import 'package:intl/intl.dart';
 
@@ -83,6 +84,8 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
   }
 
   Widget _buildAppBar() {
+    final imageProvider = getImageProvider(controller.doctor.photoUrl);
+
     return SliverAppBar(
       expandedHeight: 320,
       pinned: true,
@@ -93,8 +96,8 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            (controller.doctor.photoUrl != null && controller.doctor.photoUrl!.isNotEmpty)
-                ? Image.network(controller.doctor.photoUrl!, fit: BoxFit.cover)
+            imageProvider != null
+                ? Image(image: imageProvider, fit: BoxFit.cover)
                 : Container(
                     color: AppColors.primarySurface,
                     child: const Icon(Icons.person, size: 120, color: AppColors.primary),

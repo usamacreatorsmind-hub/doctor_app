@@ -89,6 +89,31 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (record.referredHospitalName != null && record.referredHospitalName!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.primaryBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.local_hospital_rounded, size: 14, color: AppColors.primary),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Referred to: ${record.referredHospitalName}',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (record.followUpDate != null && record.followUpDate!.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Row(
@@ -163,6 +188,43 @@ class PatientRecordsScreen extends GetView<PatientRecordsController> {
                 const Text('Doctor Remarks', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 8),
                 Text(record.doctorRemarks, style: const TextStyle(color: AppColors.textSecondary)),
+              ],
+
+              if (record.referredHospitalName != null && record.referredHospitalName!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.local_hospital_rounded, color: AppColors.primary, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Hospital Referral',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('Hospital: ${record.referredHospitalName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      if (record.referralNotes != null && record.referralNotes!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Reason / Notes: ${record.referralNotes}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
 
               if (record.followUpDate != null && record.followUpDate!.isNotEmpty) ...[

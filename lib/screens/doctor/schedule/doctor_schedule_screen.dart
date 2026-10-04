@@ -153,8 +153,8 @@ class DoctorScheduleScreen extends GetView<DoctorScheduleController> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
                   value: duration,
-                  items: [15, 20, 30, 45, 60].map((e) =>
-                      DropdownMenuItem(value: e, child: Text('$e mins'))).toList(),
+                  items: [1, 5, 10, 15, 20, 30, 45, 60].map((e) =>
+                      DropdownMenuItem(value: e, child: Text(e == 1 ? '1 min (Minimum)' : '$e mins'))).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setModalState(() => duration = val);

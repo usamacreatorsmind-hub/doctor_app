@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../widgets/address_autocomplete_field.dart';
 import 'doctor_register_controller.dart';
 
 class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
@@ -83,10 +84,9 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                                 ),
                         ),
                         const SizedBox(height: 14),
-                        _buildInputField(
+                        AddressAutocompleteField(
                           label: 'Full Address',
-                          hint: 'Street, Area, Building',
-                          icon: Icons.location_on_outlined,
+                          hint: 'Start typing area (e.g. Boring Road, Gomti Nagar)...',
                           controller: controller.addressController,
                           validator: (v) => (v == null || v.isEmpty) ? 'Enter address' : null,
                         ),
@@ -205,6 +205,38 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                           'Note: This is the only part patients pay online to book a slot.',
                           style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontStyle: FontStyle.italic),
                         ),
+                        const SizedBox(height: 14),
+                        Obx(() => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Minimum Consultation Duration', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                            const SizedBox(height: 6),
+                            DropdownButtonFormField<int>(
+                              value: controller.consultationDuration.value,
+                              items: const [
+                                DropdownMenuItem(value: 1, child: Text('1 Minute (Minimum)')),
+                                DropdownMenuItem(value: 5, child: Text('5 Minutes')),
+                                DropdownMenuItem(value: 10, child: Text('10 Minutes')),
+                                DropdownMenuItem(value: 15, child: Text('15 Minutes')),
+                                DropdownMenuItem(value: 20, child: Text('20 Minutes')),
+                                DropdownMenuItem(value: 30, child: Text('30 Minutes')),
+                                DropdownMenuItem(value: 45, child: Text('45 Minutes')),
+                                DropdownMenuItem(value: 60, child: Text('60 Minutes')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) controller.consultationDuration.value = val;
+                              },
+                              decoration: InputDecoration(
+                                prefixIcon: const Icon(Icons.timer_outlined, color: AppColors.primary),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                              ),
+                            ),
+                          ],
+                        )),
                         const SizedBox(height: 20),
 
                         _buildChipSection(

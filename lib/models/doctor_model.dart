@@ -25,10 +25,12 @@ class DoctorModel {
   final String status;
   final String practiceType; // 'hospital' or 'clinic'
   final String? clinicName;
+  final String? address;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final double? latitude;
   final double? longitude;
+  final int consultationDuration; // In minutes (min 1 min)
 
   const DoctorModel({
     required this.doctorId,
@@ -55,10 +57,12 @@ class DoctorModel {
     required this.status,
     this.practiceType = 'hospital',
     this.clinicName,
+    this.address,
     required this.createdAt,
     this.updatedAt,
     this.latitude,
     this.longitude,
+    this.consultationDuration = 15,
   });
 
   static DateTime _parseDateTime(dynamic value) {
@@ -124,10 +128,12 @@ class DoctorModel {
       status: (map['status']?.toString() ?? 'active').toLowerCase(),
       practiceType: map['practiceType']?.toString() ?? 'hospital',
       clinicName: map['clinicName']?.toString(),
+      address: map['address']?.toString() ?? map['clinicAddress']?.toString(),
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
       latitude: map['latitude'] != null ? double.tryParse(map['latitude'].toString()) : null,
       longitude: map['longitude'] != null ? double.tryParse(map['longitude'].toString()) : null,
+      consultationDuration: int.tryParse(map['consultationDuration']?.toString() ?? '15') ?? 15,
     );
   }
 
@@ -158,10 +164,13 @@ class DoctorModel {
       'status': status,
       'practiceType': practiceType,
       'clinicName': clinicName,
+      'address': address,
+      'clinicAddress': address,
       'createdAt': createdAt,
       'updatedAt': FieldValue.serverTimestamp(),
       'latitude': latitude,
       'longitude': longitude,
+      'consultationDuration': consultationDuration,
     };
   }
 
@@ -170,8 +179,10 @@ class DoctorModel {
     List<String>? hospitalIds,
     String? status,
     String? photoUrl,
+    String? address,
     double? latitude,
     double? longitude,
+    int? consultationDuration,
   }) {
     return DoctorModel(
       doctorId: doctorId,
@@ -198,10 +209,12 @@ class DoctorModel {
       status: status ?? this.status,
       practiceType: practiceType,
       clinicName: clinicName,
+      address: address ?? this.address,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      consultationDuration: consultationDuration ?? this.consultationDuration,
     );
   }
 }

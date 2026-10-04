@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
+import '../../../utils/helper.dart';
+import '../../../widgets/address_autocomplete_field.dart';
 import 'profile_setup_controller.dart';
 
 class ProfileSetupScreen extends StatelessWidget {
@@ -250,11 +252,11 @@ class _Step1Personal extends StatelessWidget {
             const SizedBox(height: 14),
             _buildBloodGroupSelector(controller),
             const SizedBox(height: 14),
-            _buildInputField(
+            AddressAutocompleteField(
               label: 'Address',
-              hint: 'House no, Street, Area',
-              icon: Icons.home_outlined,
+              hint: 'Start typing area (e.g. Boring Road, Gomti Nagar)...',
               controller: controller.addressController,
+              prefixIcon: Icons.home_outlined,
               maxLines: 2,
             ),
             const SizedBox(height: 14),
@@ -305,8 +307,8 @@ class _Step1Personal extends StatelessWidget {
               ImageProvider? imageProvider;
               if (controller.pickedImage.value != null) {
                 imageProvider = FileImage(controller.pickedImage.value!);
-              } else if (controller.profilePhotoUrl.value.isNotEmpty) {
-                imageProvider = NetworkImage(controller.profilePhotoUrl.value);
+              } else {
+                imageProvider = getImageProvider(controller.profilePhotoUrl.value);
               }
 
               return Container(
@@ -316,16 +318,9 @@ class _Step1Personal extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: AppColors.primarySurface,
                   border: Border.all(color: AppColors.primary, width: 2),
-                  image: imageProvider != null
-                      ? DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                        )
-                      : null,
+                  image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
                 ),
-                child: imageProvider == null
-                    ? const Icon(Icons.person_rounded, size: 48, color: AppColors.primary)
-                    : null,
+                child: imageProvider == null ? const Icon(Icons.person_rounded, size: 48, color: AppColors.primary) : null,
               );
             }),
             Positioned(
@@ -338,13 +333,7 @@ class _Step1Personal extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: AppColors.primary,
                   border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 2))],
                 ),
                 child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
               ),

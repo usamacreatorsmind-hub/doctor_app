@@ -30,6 +30,9 @@ import '../screens/patient/booking_confirm/booking_confirm_binding.dart';
 import '../screens/patient/booking_confirm/booking_confirm_screen.dart';
 import '../screens/patient/payment/payment_binding.dart';
 import '../screens/patient/payment/payment_screen.dart';
+import '../screens/patient/payment/collect_payment_controller.dart';
+import '../screens/patient/payment/collect_payment_screen.dart';
+import '../screens/patient/payment/collect_payment_success_screen.dart';
 import '../screens/patient/booking_success/booking_success_binding.dart';
 import '../screens/patient/booking_success/booking_success_screen.dart';
 import '../screens/patient/appointments/patient_appointments_binding.dart';
@@ -152,6 +155,17 @@ class AppPages {
       name: AppRoutes.payment,
       page: () => const PaymentScreen(),
       binding: PaymentBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.collectPayment,
+      page: () => const CollectPaymentScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => CollectPaymentController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.collectPaymentSuccess,
+      page: () => const CollectPaymentSuccessScreen(),
     ),
     GetPage(
       name: AppRoutes.bookingSuccess,

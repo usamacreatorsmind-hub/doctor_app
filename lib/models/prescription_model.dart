@@ -19,6 +19,10 @@ class PrescriptionModel {
   final String? doctorName;
   final String? specialization;
 
+  // Referral Fields
+  final String? referredHospitalName;
+  final String? referralNotes;
+
   const PrescriptionModel({
     required this.prescriptionId,
     required this.appointmentId,
@@ -32,6 +36,8 @@ class PrescriptionModel {
     this.updatedAt,
     this.doctorName,
     this.specialization,
+    this.referredHospitalName,
+    this.referralNotes,
   });
 
   static DateTime _parseDateTime(dynamic value) {
@@ -72,6 +78,8 @@ class PrescriptionModel {
       updatedAt: _parseDateTimeNullable(map['updatedAt']),
       doctorName: map['doctorName'],
       specialization: spec,
+      referredHospitalName: map['referredHospitalName'],
+      referralNotes: map['referralNotes'],
     );
   }
 
@@ -88,6 +96,8 @@ class PrescriptionModel {
       'updatedAt': FieldValue.serverTimestamp(),
       'doctorName': doctorName,
       'specialization': specialization,
+      'referredHospitalName': referredHospitalName,
+      'referralNotes': referralNotes,
     };
   }
 
@@ -95,6 +105,8 @@ class PrescriptionModel {
     String? prescriptionId,
     String? doctorName,
     String? specialization,
+    String? referredHospitalName,
+    String? referralNotes,
   }) {
     return PrescriptionModel(
       prescriptionId: prescriptionId ?? this.prescriptionId,
@@ -109,6 +121,8 @@ class PrescriptionModel {
       updatedAt: updatedAt,
       doctorName: doctorName ?? this.doctorName,
       specialization: specialization ?? this.specialization,
+      referredHospitalName: referredHospitalName ?? this.referredHospitalName,
+      referralNotes: referralNotes ?? this.referralNotes,
     );
   }
 }

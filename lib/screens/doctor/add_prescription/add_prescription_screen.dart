@@ -48,28 +48,65 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
                     prefixIcon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryBorder),
+                    ),
                   ),
                 ),
-                
-                const SizedBox(height: 30),
-                Obx(() => SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: controller.isLoading.value ? null : controller.savePrescription,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                const SizedBox(height: 15),
+                _buildSectionTitle('Refer Patient to Hospital (Optional)'),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: controller.referredHospitalController,
+                  decoration: InputDecoration(
+                    hintText: 'Hospital Name (e.g. AIIMS Hospital, Delhi)',
+                    prefixIcon: const Icon(Icons.local_hospital_rounded, color: AppColors.primary),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryBorder),
                     ),
-                    child: controller.isLoading.value
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Save & Complete Appointment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                    ),
                   ),
-                )),
+                ),
+                const SizedBox(height: 10),
+                _buildTextArea(
+                  controller.referralNotesController,
+                  'Referral reason / department notes (e.g. Referred for Speciality Consultation)...',
+                  maxLines: 2,
+                ),
 
+                const SizedBox(height: 30),
+                Obx(
+                  () => SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: controller.isLoading.value ? null : controller.savePrescription,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: controller.isLoading.value
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Save & Complete Appointment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -81,10 +118,7 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
   Widget _buildPatientInfo() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primarySurface,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(16)),
       child: Row(
         children: [
           const CircleAvatar(
@@ -97,7 +131,10 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(controller.appointment.patientName ?? 'Patient', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                Text('Slot: ${controller.appointment.timeSlot} | Date: ${controller.appointment.appointmentDate}', style: const TextStyle(color: AppColors.primary, fontSize: 12)),
+                Text(
+                  'Slot: ${controller.appointment.timeSlot} | Date: ${controller.appointment.appointmentDate}',
+                  style: const TextStyle(color: AppColors.primary, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -107,7 +144,10 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary));
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+    );
   }
 
   Widget _buildMedicineInputForm() {
@@ -165,7 +205,7 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
         );
       }
       return ListView.separated(
-        padding: EdgeInsets.only(top: 0,bottom: 10),
+        padding: EdgeInsets.only(top: 0, bottom: 10),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: controller.medicines.length,
@@ -192,7 +232,10 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text('${med.dosage} | ${med.frequency} | ${med.duration}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      Text(
+                        '${med.dosage} | ${med.frequency} | ${med.duration}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ),
@@ -234,9 +277,18 @@ class AddPrescriptionScreen extends GetView<AddPrescriptionController> {
         hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
         filled: true,
         fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryBorder)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
       ),
     );
   }

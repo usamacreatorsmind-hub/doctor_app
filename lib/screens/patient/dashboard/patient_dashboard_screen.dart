@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 import '../../../models/doctor_model.dart';
 import '../../../widgets/animated_search_hint.dart';
 import '../doctor_search/doctor_search_screen.dart';
@@ -788,18 +789,19 @@ class _DoctorCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: AppColors.bgPage,
-                borderRadius: BorderRadius.circular(12),
-                image: (doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty)
-                    ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover)
-                    : null,
-              ),
-              child: (doctor.photoUrl == null || doctor.photoUrl!.isEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 30) : null,
-            ),
+            (() {
+              final imageProvider = getImageProvider(doctor.photoUrl);
+              return Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: AppColors.bgPage,
+                  borderRadius: BorderRadius.circular(12),
+                  image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
+                ),
+                child: imageProvider == null ? const Icon(Icons.person, color: Colors.grey, size: 30) : null,
+              );
+            })(),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

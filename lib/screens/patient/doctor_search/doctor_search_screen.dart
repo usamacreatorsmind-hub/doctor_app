@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/helper.dart';
 import '../../../models/doctor_model.dart';
 import '../../../widgets/animated_search_hint.dart';
 import 'doctor_search_controller.dart';
@@ -268,6 +269,8 @@ class _DoctorResultCard extends StatelessWidget {
       }
     }
 
+    final imageProvider = getImageProvider(doctor.photoUrl);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -287,9 +290,9 @@ class _DoctorResultCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.primarySurface,
                     borderRadius: BorderRadius.circular(12),
-                    image: doctor.photoUrl != null ? DecorationImage(image: NetworkImage(doctor.photoUrl!), fit: BoxFit.cover) : null,
+                    image: imageProvider != null ? DecorationImage(image: imageProvider, fit: BoxFit.cover) : null,
                   ),
-                  child: doctor.photoUrl == null ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 40) : null,
+                  child: imageProvider == null ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 40) : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(

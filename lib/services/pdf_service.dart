@@ -154,6 +154,54 @@ class PdfService {
               pw.Text("Remarks:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.Text(prescription.doctorRemarks),
 
+              if (prescription.referredHospitalName != null && prescription.referredHospitalName!.isNotEmpty) ...[
+                pw.SizedBox(height: 15),
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(10),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blue50,
+                    border: pw.Border.all(color: PdfColors.blue800, width: 1),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        "HOSPITAL REFERRAL / APPOINTMENT LETTER",
+                        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.RichText(
+                        text: pw.TextSpan(
+                          children: [
+                            pw.TextSpan(
+                              text: "Referred To Hospital: ",
+                              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                            ),
+                            pw.TextSpan(text: prescription.referredHospitalName!),
+                          ],
+                        ),
+                      ),
+                      if (prescription.referralNotes != null && prescription.referralNotes!.isNotEmpty) ...[
+                        pw.SizedBox(height: 2),
+                        pw.RichText(
+                          text: pw.TextSpan(
+                            children: [
+                              pw.TextSpan(
+                                text: "Referral Reason / Dept: ",
+                                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                              ),
+                              pw.TextSpan(text: prescription.referralNotes!),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
               pw.Spacer(),
               pw.Divider(),
               pw.Row(

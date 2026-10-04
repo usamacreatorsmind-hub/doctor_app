@@ -19,7 +19,7 @@ const razorpay = new Razorpay({
 setGlobalOptions({ region: "us-central1" });
 
 /**
- * Trigger: Create Razorpay Order
+ * Trigger: Create Razorpay Order (for standard patient checkout)
  */
 exports.createRazorpayOrder = onCall(async (request) => {
     const amount = request.data.amount; // In Paisa (e.g. 5000 for ₹50)
@@ -46,6 +46,106 @@ exports.createRazorpayOrder = onCall(async (request) => {
     } catch (error) {
         console.error("Razorpay Order Error:", error);
         throw new HttpsError("internal", "Failed to create Razorpay order");
+    }
+});
+
+/**
+ * Trigger: Create Razorpay QR Code for Walk-In / Counter Payments
+ */
+exports.createRazorpayQrCode = onCall(async (request) => {
+    try {
+        const { amount, appointmentId, patientId } = request.data;
+        if (!amount) {
+            throw new HttpsError("invalid-argument", "Amount is required");
+        }
+
+        const qrCode = await razorpay.qrCode.create({
+            type: "upi_qr",
+            name: "Ayu Veda Care",
+            usage: "single_use",
+            fixed_amount: true,
+            payment_amount: amount, // in paisa
+            description: "Walk-in Consultation Fee",
+            notes: {
+                appointmentId: appointmentId || 'WALKIN',
+                patientId: patientId || ""
+            }
+        });
+
+        return qrCode;
+    } catch (error) {
+        console.error("Razorpay QR Code Error:", error);
+        throw new HttpsError("internal", error.message || "Failed to create Razorpay QR code");
+    }
+});
+
+/**
+ * 1. createOrder: Creates an order and generates a Razorpay UPI QR code (expires in 5 minutes)
+ */
+exports.createOrder = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "User must be logged in to create a payment order.");
+    }
+
+    const { amount, description, customerName } = request.data;
+    if (!amount || amount <= 0 || amount > 100000) {
+        throw new HttpsError("invalid-argument", "Invalid amount provided.");
+    }
+    if (!customerName || customerName.trim().length === 0) {
+        throw new HttpsError("invalid-argument", "Customer name is required.");
+    }
+
+    const sanitizedName = customerName.trim().substring(0, 50);
+    const sanitizedDesc = (description || "Consultation & Service Fee").trim().substring(0, 100);
+    const uid = request.auth.uid;
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+    const closeTimestamp = Math.floor(expiresAt.getTime() / 1000);
+
+    const orderRef = db.collection('orders').doc();
+    const orderId = orderRef.id;
+
+    try {
+        const qrCode = await razorpay.qrCode.create({
+            type: "upi_qr",
+            name: sanitizedName,
+            usage: "single_use",
+            fixed_amount: true,
+            payment_amount: Math.round(amount * 100), // convert rupees to paise
+            description: sanitizedDesc,
+            close_by: closeTimestamp,
+            notes: {
+                orderId: orderId,
+                createdBy: uid
+            }
+        });
+
+        const orderData = {
+            amount: amount,
+            description: sanitizedDesc,
+            customerName: sanitizedName,
+            status: "created",
+            createdBy: uid,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+            qrId: qrCode.id,
+            qrImageUrl: qrCode.image_url,
+            qrImageContent: qrCode.image_content || null,
+        };
+
+        await orderRef.set(orderData);
+
+        return {
+            orderId: orderId,
+            qrId: qrCode.id,
+            qrImageUrl: qrCode.image_url,
+            qrImageContent: qrCode.image_content || null,
+            expiresAt: expiresAt.toISOString(),
+        };
+    } catch (error) {
+        console.error("createOrder Razorpay Error:", error);
+        throw new HttpsError("internal", error.message || "Failed to generate Razorpay QR code.");
     }
 });
 
@@ -104,15 +204,15 @@ const MSG91_TEMPLATE_ID = "6a95551467221b0f4e010bb2";
 const WEBHOOK_SECRET = "AyuVeda_Secret_2024";
 
 /**
- * Razorpay Webhook to verify and confirm payments
+ * Razorpay Webhook to verify and confirm payments (Supports QR codes & standard payments)
  */
 exports.razorpayWebhook = onRequest(async (req, res) => {
     const signature = req.headers["x-razorpay-signature"];
-    const body = JSON.stringify(req.body);
+    const rawBody = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
 
     const expectedSignature = crypto
         .createHmac("sha256", WEBHOOK_SECRET)
-        .update(body)
+        .update(rawBody)
         .digest("hex");
 
     if (signature !== expectedSignature) {
@@ -121,35 +221,82 @@ exports.razorpayWebhook = onRequest(async (req, res) => {
     }
 
     const event = req.body.event;
-    console.log(`Received Razorpay Webhook Event: ${event}`);
+    const eventId = req.body.id || (req.body.payload && req.body.payload.payment ? req.body.payload.payment.entity.id : null);
+    console.log(`Received Razorpay Webhook Event: ${event}, ID: ${eventId}`);
 
-    if (event === "payment.captured") {
-        const paymentData = req.body.payload.payment.entity;
-        const orderData = req.body.payload.order ? req.body.payload.order.entity : null;
+    try {
+        // Idempotency check
+        if (eventId) {
+            const eventRef = db.collection('processedEvents').doc(eventId);
+            const eventDoc = await eventRef.get();
+            if (eventDoc.exists) {
+                console.log(`Event ${eventId} already processed. Skipping.`);
+                return res.status(200).send("Event already processed");
+            }
+            await eventRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() });
+        }
 
-        // Extract metadata from notes
-        const notes = paymentData.notes || (orderData ? orderData.notes : {});
-        const appointmentId = notes.appointmentId;
-        const patientId = notes.patientId;
+        if (event === "qr_code.credited" || event === "payment.captured") {
+            const paymentData = req.body.payload.payment ? req.body.payload.payment.entity : null;
+            const qrData = req.body.payload.qr_code ? req.body.payload.qr_code.entity : null;
 
-        if (appointmentId) {
-            console.log(`Processing successful payment for Appointment: ${appointmentId}`);
+            const notes = (paymentData && paymentData.notes) || (qrData && qrData.notes) || {};
+            let orderId = notes.orderId;
+            const qrId = qrData ? qrData.id : (paymentData && paymentData.qr_code_id ? paymentData.qr_code_id : null);
 
-            try {
+            // If orderId not in notes, search order by qrId
+            if (!orderId && qrId) {
+                const orderSnap = await db.collection('orders').where('qrId', '==', qrId).limit(1).get();
+                if (!orderSnap.empty) {
+                    orderId = orderSnap.docs[0].id;
+                }
+            }
+
+            if (orderId) {
+                const orderRef = db.collection('orders').doc(orderId);
+                const orderDoc = await orderRef.get();
+
+                if (orderDoc.exists && orderDoc.data().status !== 'paid') {
+                    const orderData = orderDoc.data();
+                    const paidAmount = paymentData ? paymentData.amount / 100 : orderData.amount;
+
+                    if (Math.abs(paidAmount - orderData.amount) < 1.0) {
+                        await orderRef.update({
+                            status: 'paid',
+                            paymentId: paymentData ? paymentData.id : 'UPI_QR_DIRECT',
+                            paymentMethod: paymentData ? paymentData.method : 'upi',
+                            paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                        });
+                        console.log(`Order ${orderId} successfully marked as paid.`);
+
+                        // Create Payment Record
+                        await db.collection('payments').add({
+                            orderId: orderId,
+                            amount: paidAmount,
+                            paymentMethod: paymentData ? paymentData.method : 'upi',
+                            transactionId: paymentData ? paymentData.id : 'QR_TXN',
+                            paymentDate: new Date().toISOString(),
+                            status: 'Success',
+                            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        });
+                    }
+                }
+            }
+
+            // Also support legacy appointment metadata if present in notes
+            const appointmentId = notes.appointmentId;
+            const patientId = notes.patientId;
+            if (appointmentId && paymentData) {
                 const batch = db.batch();
-
-                // 1. Update Appointment
                 const apptRef = db.collection('appointments').doc(appointmentId);
                 batch.update(apptRef, {
                     status: 'Confirmed',
                     paymentStatus: 'Booking Charge Paid',
-                    bookingCharge: paymentData.amount / 100, // Convert paisa to INR
+                    bookingCharge: paymentData.amount / 100,
                     transactionId: paymentData.id,
                     razorpayOrderId: paymentData.order_id,
                     updatedAt: admin.firestore.FieldValue.serverTimestamp()
                 });
-
-                // 2. Create Payment Record
                 const paymentRef = db.collection('payments').doc();
                 batch.set(paymentRef, {
                     appointmentId: appointmentId,
@@ -162,16 +309,115 @@ exports.razorpayWebhook = onRequest(async (req, res) => {
                     status: 'Success',
                     createdAt: admin.firestore.FieldValue.serverTimestamp()
                 });
-
                 await batch.commit();
-                console.log(`Successfully verified and updated payment for ${appointmentId}`);
-            } catch (err) {
-                console.error("Error updating Firestore via Webhook:", err);
+            }
+        } else if (event === "qr_code.closed") {
+            const qrEntity = req.body.payload.qr_code ? req.body.payload.qr_code.entity : null;
+            const qrId = qrEntity ? qrEntity.id : null;
+            if (qrId) {
+                const orderSnap = await db.collection('orders').where('qrId', '==', qrId).where('status', '==', 'created').limit(1).get();
+                if (!orderSnap.empty) {
+                    await orderSnap.docs[0].ref.update({ status: 'expired' });
+                }
             }
         }
+
+        return res.status(200).send("ok");
+    } catch (error) {
+        console.error("Webhook error:", error);
+        return res.status(500).send("Internal server error");
+    }
+});
+
+/**
+ * 3. verifyOrder: Fallback verification by checking QR code payments via Razorpay SDK
+ */
+exports.verifyOrder = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Authentication required.");
     }
 
-    res.status(200).send("ok");
+    const { orderId } = request.data;
+    if (!orderId) {
+        throw new HttpsError("invalid-argument", "Order ID is required.");
+    }
+
+    const orderRef = db.collection('orders').doc(orderId);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+        throw new HttpsError("not-found", "Order not found.");
+    }
+
+    const orderData = orderDoc.data();
+    if (orderData.status === 'paid') {
+        return { status: 'paid' };
+    }
+
+    if (!orderData.qrId) {
+        return { status: orderData.status };
+    }
+
+    try {
+        const payments = await razorpay.qrCode.fetchAllPayments(orderData.qrId);
+        if (payments && payments.items && payments.items.length > 0) {
+            const capturedPayment = payments.items.find(p => p.status === 'captured');
+            if (capturedPayment) {
+                const paidAmount = capturedPayment.amount / 100;
+                if (Math.abs(paidAmount - orderData.amount) < 1.0) {
+                    await orderRef.update({
+                        status: 'paid',
+                        paymentId: capturedPayment.id,
+                        paymentMethod: capturedPayment.method,
+                        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+
+                    await db.collection('payments').add({
+                        orderId: orderId,
+                        amount: paidAmount,
+                        paymentMethod: capturedPayment.method,
+                        transactionId: capturedPayment.id,
+                        paymentDate: new Date().toISOString(),
+                        status: 'Success',
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+
+                    return { status: 'paid' };
+                }
+            }
+        }
+    } catch (error) {
+        console.error("verifyOrder Razorpay SDK error:", error);
+    }
+
+    if (orderData.expiresAt.toDate() < new Date() && orderData.status === 'created') {
+        await orderRef.update({ status: 'expired' });
+        return { status: 'expired' };
+    }
+
+    return { status: orderData.status };
+});
+
+/**
+ * 4. expireStaleOrders: Scheduled cron every 5 minutes to mark stale orders as expired
+ */
+exports.expireStaleOrders = onSchedule("*/5 * * * *", async (event) => {
+    const now = admin.firestore.Timestamp.now();
+    const staleOrdersSnap = await db.collection('orders')
+        .where('status', '==', 'created')
+        .where('expiresAt', '<', now)
+        .get();
+
+    if (staleOrdersSnap.empty) return null;
+
+    const batch = db.batch();
+    staleOrdersSnap.forEach(doc => {
+        batch.update(doc.ref, { status: 'expired' });
+    });
+
+    await batch.commit();
+    console.log(`Marked ${staleOrdersSnap.size} stale orders as expired.`);
+    return null;
 });
 
 /**

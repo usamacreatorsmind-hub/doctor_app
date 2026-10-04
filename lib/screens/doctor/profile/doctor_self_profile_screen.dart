@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
+import '../../../widgets/address_autocomplete_field.dart';
 import 'doctor_self_profile_controller.dart';
 import '../../../services/pdf_service.dart';
 
@@ -71,8 +72,12 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Obx(
-            () => GestureDetector(
+          Obx(() {
+            final imageProvider = controller.pickedImage.value != null
+                ? FileImage(controller.pickedImage.value!)
+                : getImageProvider(profile?.photoUrl);
+
+            return GestureDetector(
               onTap: controller.isEditing.value ? () => controller.showImagePickerBottomSheet(context) : null,
               child: Stack(
                 children: [
@@ -82,14 +87,8 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                     child: CircleAvatar(
                       radius: 55,
                       backgroundColor: Colors.white,
-                      backgroundImage: controller.pickedImage.value != null
-                          ? FileImage(controller.pickedImage.value!) as ImageProvider
-                          : (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty)
-                          ? NetworkImage(profile.photoUrl!)
-                          : null,
-                      child: (controller.pickedImage.value == null && (profile?.photoUrl == null || profile!.photoUrl!.isEmpty))
-                          ? const Icon(Icons.person, color: Colors.grey, size: 55)
-                          : null,
+                      backgroundImage: imageProvider,
+                      child: imageProvider == null ? const Icon(Icons.person, color: Colors.grey, size: 55) : null,
                     ),
                   ),
                   if (controller.isEditing.value)
@@ -108,8 +107,8 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                     ),
                 ],
               ),
-            ),
-          ),
+            );
+          }),
           const SizedBox(height: 16),
           Text(
             profile?.doctorName ?? 'Doctor Name',
@@ -197,6 +196,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
               _infoTile(Icons.school_rounded, 'Qualification', profile.qualification.join(', ')),
               _infoTile(Icons.work_history_rounded, 'Experience', '${profile.experience} Years'),
               _infoTile(Icons.currency_rupee_rounded, 'Consultation Fee', '₹${profile.consultationFee.toInt()}'),
+              _infoTile(Icons.timer_rounded, 'Min Consultation Time', '${profile.consultationDuration} mins'),
             ],
           ),
         ),
@@ -218,25 +218,31 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
         _buildSectionCard(
           title: 'Practice Location & Address',
           child: Obx(() {
-            final addr = controller.fetchedAddress.value;
+            final manualAddr = controller.addressController.text.trim();
+            final fetchedAddr = controller.fetchedAddress.value.trim();
+            final profileAddr = profile.address?.trim() ?? '';
+
+            String displayAddr = '';
+            if (manualAddr.isNotEmpty) {
+              displayAddr = manualAddr;
+            } else if (fetchedAddr.isNotEmpty) {
+              displayAddr = fetchedAddr;
+            } else if (profileAddr.isNotEmpty) {
+              displayAddr = profileAddr;
+            }
+
             final lat = controller.latitude.value;
             final lng = controller.longitude.value;
 
-            final displayAddr = addr.isNotEmpty
-                ? addr
+            final finalDisplay = displayAddr.isNotEmpty
+                ? displayAddr
                 : (lat != null && lng != null
-                    ? 'Coordinates: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}'
-                    : 'Location not captured yet');
+                      ? 'Coordinates: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}'
+                      : 'Location not captured yet');
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _infoTile(
-                  Icons.location_on_rounded,
-                  'Address Details',
-                  displayAddr,
-                ),
-              ],
+              children: [_infoTile(Icons.location_on_rounded, 'Address Details', finalDisplay)],
             );
           }),
         ),
@@ -264,8 +270,6 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
             style: const TextStyle(color: AppColors.textSecondary, height: 1.5, fontSize: 13),
           ),
         ),
-
-
 
         _buildSectionCard(
           title: 'Legal & Support',
@@ -412,6 +416,43 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              const Text(
+                'Minimum Consultation Duration',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Obx(
+                () => DropdownButtonFormField<int>(
+                  value: controller.consultationDuration.value,
+                  items: const [
+                    DropdownMenuItem(value: 1, child: Text('1 Minute (Minimum)')),
+                    DropdownMenuItem(value: 5, child: Text('5 Minutes')),
+                    DropdownMenuItem(value: 10, child: Text('10 Minutes')),
+                    DropdownMenuItem(value: 15, child: Text('15 Minutes')),
+                    DropdownMenuItem(value: 20, child: Text('20 Minutes')),
+                    DropdownMenuItem(value: 30, child: Text('30 Minutes')),
+                    DropdownMenuItem(value: 45, child: Text('45 Minutes')),
+                    DropdownMenuItem(value: 60, child: Text('60 Minutes')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) controller.consultationDuration.value = val;
+                  },
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.timer_outlined, color: AppColors.primary),
+                    filled: true,
+                    fillColor: AppColors.bgPage,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryBorder),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -421,7 +462,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (controller.isEditing.value)
+              if (controller.isEditing.value) ...[
                 ElevatedButton.icon(
                   onPressed: controller.getCurrentLocation,
                   icon: const Icon(Icons.my_location_rounded, size: 18),
@@ -434,10 +475,17 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
+                const SizedBox(height: 12),
+                AddressAutocompleteField(
+                  label: 'Practice / Clinic Address (Editable)',
+                  controller: controller.addressController,
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+              ],
               Obx(() {
                 final lat = controller.latitude.value;
                 final lng = controller.longitude.value;
-                final addr = controller.fetchedAddress.value;
 
                 if (lat == null || lng == null) {
                   return const SizedBox.shrink();
@@ -445,7 +493,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
 
                 return Container(
                   width: double.infinity,
-                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.primarySurface,
@@ -457,25 +505,18 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.location_on_rounded, size: 18, color: AppColors.primary),
+                          Icon(Icons.my_location_rounded, size: 18, color: AppColors.primary),
                           SizedBox(width: 6),
                           Text(
-                            'Captured Location Details:',
+                            'Captured Coordinates:',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                           ),
                         ],
                       ),
-                      if (addr.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          addr,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                        ),
-                      ],
                       const SizedBox(height: 4),
                       Text(
-                        'Coordinates: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        'Latitude: ${lat.toStringAsFixed(4)}, Longitude: ${lng.toStringAsFixed(4)}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                       ),
                     ],
                   ),

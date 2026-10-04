@@ -20,6 +20,8 @@ class AddPrescriptionController extends GetxController {
   final remarksController = TextEditingController();
   final testsController = TextEditingController();
   final followUpController = TextEditingController();
+  final referredHospitalController = TextEditingController();
+  final referralNotesController = TextEditingController();
 
   // Structured Medicines
   final medicines = <MedicineModel>[].obs;
@@ -121,6 +123,9 @@ class AddPrescriptionController extends GetxController {
       final docProfile = doctorProfile.value;
       if (docProfile == null) throw "Doctor profile not loaded";
 
+      final referredHospitalName = referredHospitalController.text.trim();
+      final referralNotes = referralNotesController.text.trim();
+
       final prescription = PrescriptionModel(
         prescriptionId: '',
         appointmentId: appointment.appointmentId,
@@ -133,6 +138,8 @@ class AddPrescriptionController extends GetxController {
         createdAt: DateTime.now(),
         doctorName: docProfile.doctorName,
         specialization: docProfile.specialization.join(', '),
+        referredHospitalName: referredHospitalName.isEmpty ? null : referredHospitalName,
+        referralNotes: referralNotes.isEmpty ? null : referralNotes,
       );
 
       // 1. Save to Firestore
@@ -205,6 +212,8 @@ class AddPrescriptionController extends GetxController {
     remarksController.dispose();
     testsController.dispose();
     followUpController.dispose();
+    referredHospitalController.dispose();
+    referralNotesController.dispose();
     medNameController.dispose();
     medDosageController.dispose();
     medFreqController.dispose();

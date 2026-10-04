@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -10,15 +11,17 @@ import '../../../firebase_options.dart';
 import '../../../models/user_model.dart';
 import '../../../models/doctor_model.dart';
 import '../../../models/appointment_model.dart';
-import '../../../models/doctor_schedule_model.dart';
 import '../../../models/patient_profile_model.dart';
+import '../../../models/payment_model.dart';
 import '../../../services/booking_service.dart';
+import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
 
 class WalkInBookingController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
   final FirestoreService _firestoreService = FirestoreService();
   final BookingService _bookingService = BookingService();
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   // State
   final currentStep = 0.obs;
@@ -72,7 +75,7 @@ class WalkInBookingController extends GetxController {
 
   Future<void> _loadDoctors() async {
     if (receptionistUser?.hospitalId == null) return;
-    
+
     // If linked to a specific doctor (Clinic/PA mode)
     if (receptionistUser?.doctorId != null) {
       final doc = await _firestoreService.getDoctor(receptionistUser!.doctorId!);
@@ -206,7 +209,7 @@ class WalkInBookingController extends GetxController {
     return days[date.weekday - 1];
   }
 
-  Future<void> bookAppointment() async {
+  void bookAppointment() {
     if (selectedDoctor.value == null || selectedSlot.value == null) {
       AppSnackBar.show('Select a doctor and time slot');
       return;
@@ -223,7 +226,57 @@ class WalkInBookingController extends GetxController {
       }
     }
 
+    final fee = selectedDoctor.value?.consultationFee ?? 0.0;
+    final customerName = isForSelf.value ? foundPatient!.name : otherNameController.text.trim();
+
+    Get.toNamed(
+      AppRoutes.collectPayment,
+      arguments: {
+        'amount': fee,
+        'description': 'Walk-In Consultation - Dr. ${selectedDoctor.value!.doctorName}',
+        'customerName': customerName,
+      },
+    )?.then((result) {
+      if (result == true) {
+        finalizeBooking('Razorpay QR');
+      }
+    });
+  }
+
+  Future<String?> generateRazorpayQrCode(double amount) async {
+    try {
+      isLoading.value = true;
+      update();
+      final HttpsCallable callable = _functions.httpsCallable('createRazorpayQrCode');
+      final result = await callable.call({
+        'amount': (amount * 100).toInt(),
+        'appointmentId': 'WALKIN-${DateTime.now().millisecondsSinceEpoch}',
+        'patientId': foundPatient?.uid ?? '',
+      });
+
+      final data = result.data as Map<String, dynamic>?;
+      if (data != null && data['image_url'] != null) {
+        return data['image_url'] as String;
+      }
+    } catch (e) {
+      debugPrint("Error generating Razorpay QR code: $e");
+      AppSnackBar.show('Failed to generate Razorpay QR: $e');
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+    return null;
+  }
+
+  Future<void> finalizeBooking(String paymentMethod) async {
+    if (selectedDoctor.value == null || selectedSlot.value == null || foundPatient == null) {
+      AppSnackBar.show('Missing booking details');
+      return;
+    }
+
     isLoading.value = true;
+    update();
+
     try {
       final patientName = isForSelf.value ? foundPatient!.name : otherNameController.text.trim();
       final dateStr = selectedDate.value.toIso8601String().split('T')[0];
@@ -233,7 +286,7 @@ class WalkInBookingController extends GetxController {
       final pType = await _bookingService.checkPatientType(foundPatient!.uid, selectedDoctor.value!.doctorId);
 
       final appt = AppointmentModel(
-        appointmentId: '', // Firestore will generate
+        appointmentId: '',
         patientId: foundPatient!.uid,
         patientName: patientName,
         doctorId: selectedDoctor.value!.doctorId,
@@ -243,8 +296,8 @@ class WalkInBookingController extends GetxController {
         timeSlot: selectedSlot.value!,
         consultationType: 'Offline',
         symptoms: symptomsController.text.trim(),
-        status: 'Confirmed', // Receptionist bookings are auto-confirmed
-        paymentStatus: 'Unpaid',
+        status: 'Confirmed',
+        paymentStatus: 'Paid',
         fee: selectedDoctor.value!.consultationFee,
         isForSelf: isForSelf.value,
         tokenNumber: token,
@@ -260,13 +313,29 @@ class WalkInBookingController extends GetxController {
         createdAt: DateTime.now(),
       );
 
-      await _firestoreService.createAppointment(appt);
+      final apptId = await _firestoreService.createAppointment(appt);
+
+      // Create Payment Record
+      final payment = PaymentModel(
+        paymentId: '',
+        appointmentId: apptId,
+        patientId: foundPatient!.uid,
+        amount: selectedDoctor.value!.consultationFee,
+        paymentMethod: paymentMethod,
+        transactionId: 'TXN-WALKIN-${DateTime.now().millisecondsSinceEpoch}',
+        paymentDate: DateTime.now().toIso8601String(),
+        status: 'Success',
+        createdAt: DateTime.now(),
+      );
+      await _firestoreService.createPayment(payment);
+
       Get.back(); // Go back to dashboard
-      AppSnackBar.show('Walk-in booking successful');
+      AppSnackBar.show('Walk-in booking & payment successful (Paid via $paymentMethod)');
     } catch (e) {
-      AppSnackBar.show('Booking error: $e');
+      AppSnackBar.show('Booking & Payment error: $e');
     } finally {
       isLoading.value = false;
+      update();
     }
   }
 

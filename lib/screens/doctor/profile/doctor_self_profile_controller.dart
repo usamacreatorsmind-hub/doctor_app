@@ -47,6 +47,7 @@ class DoctorSelfProfileController extends GetxController {
   late TextEditingController bioController;
   late TextEditingController mobileController;
   late TextEditingController clinicNameController;
+  late TextEditingController addressController;
 
   // Selected values
   final selectedHospitalIds = <String>[].obs;
@@ -57,7 +58,8 @@ class DoctorSelfProfileController extends GetxController {
   final selectedLanguages = <String>[].obs;
 
   final selectedGender = 'male'.obs;
-  final selectedConsultationMode = 'Offline'.obs; // Only Offline supported
+  final selectedConsultationMode = 'Offline'.obs;
+  final consultationDuration = 15.obs; // Only Offline supported
 
   final pickedImage = Rxn<File>();
 
@@ -70,6 +72,7 @@ class DoctorSelfProfileController extends GetxController {
     bioController = TextEditingController();
     mobileController = TextEditingController();
     clinicNameController = TextEditingController();
+    addressController = TextEditingController();
     loadInitialData();
   }
 
@@ -81,6 +84,7 @@ class DoctorSelfProfileController extends GetxController {
     bioController.dispose();
     mobileController.dispose();
     clinicNameController.dispose();
+    addressController.dispose();
     super.onClose();
   }
 
@@ -178,9 +182,12 @@ class DoctorSelfProfileController extends GetxController {
     bioController.text = profile.biography ?? '';
     mobileController.text = profile.mobileNumber;
     clinicNameController.text = profile.clinicName ?? '';
+    addressController.text = profile.address ?? '';
+    fetchedAddress.value = profile.address ?? '';
 
     selectedGender.value = profile.gender;
     selectedConsultationMode.value = profile.consultationMode;
+    consultationDuration.value = profile.consultationDuration;
 
     selectedHospitalIds.assignAll(profile.hospitalIds);
     selectedSpecializations.assignAll(profile.specialization);
@@ -191,7 +198,7 @@ class DoctorSelfProfileController extends GetxController {
     pickedImage.value = null;
     latitude.value = profile.latitude;
     longitude.value = profile.longitude;
-    if (profile.latitude != null && profile.longitude != null) {
+    if (profile.latitude != null && profile.longitude != null && fetchedAddress.value.isEmpty) {
       fetchAddressFromCoords(profile.latitude!, profile.longitude!);
     }
   }
@@ -217,7 +224,9 @@ class DoctorSelfProfileController extends GetxController {
         if (administrativeArea.isNotEmpty) addressParts.add(administrativeArea);
         if (postalCode.isNotEmpty) addressParts.add(postalCode);
 
-        fetchedAddress.value = addressParts.join(", ");
+        final addrStr = addressParts.join(", ");
+        fetchedAddress.value = addrStr;
+        addressController.text = addrStr;
         update();
       }
     } catch (e) {
@@ -253,9 +262,7 @@ class DoctorSelfProfileController extends GetxController {
       isLoading.value = true;
       update();
 
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+      Position position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
 
       latitude.value = position.latitude;
       longitude.value = position.longitude;
@@ -411,12 +418,15 @@ class DoctorSelfProfileController extends GetxController {
         'hospitalIds': selectedHospitalIds.toList(),
         'hospitalId': selectedHospitalIds.isNotEmpty ? selectedHospitalIds.first : '',
         'clinicName': clinicNameController.text.trim(),
+        'address': addressController.text.trim(),
+        'clinicAddress': addressController.text.trim(),
         'symptomsCovered': selectedSymptoms.toList(),
         'diseasesCovered': selectedDiseases.toList(),
         'photoUrl': photoUrl,
         'photo': photoUrl,
         'latitude': latitude.value,
         'longitude': longitude.value,
+        'consultationDuration': consultationDuration.value,
       };
 
       if (doctorProfile.value!.doctorId.isEmpty) {

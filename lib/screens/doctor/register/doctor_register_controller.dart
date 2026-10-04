@@ -57,6 +57,7 @@ class DoctorRegisterController extends GetxController {
 
   final selectedGender = 'male'.obs;
   final selectedConsultationMode = 'Offline'.obs; // Default to Offline
+  final consultationDuration = 15.obs; // In minutes (min 1 min)
 
   // Master Data Lists (Fetched from Firestore)
   final hospitals = <HospitalModel>[].obs;
@@ -403,6 +404,7 @@ class DoctorRegisterController extends GetxController {
           createdAt: DateTime.now(),
           latitude: latitude.value,
           longitude: longitude.value,
+          consultationDuration: consultationDuration.value,
         );
 
         final String doctorId = await _firestoreService.createDoctor(doctor);

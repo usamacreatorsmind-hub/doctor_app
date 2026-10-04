@@ -12,7 +12,7 @@ class WalkInBookingScreen extends GetView<WalkInBookingController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
-      appBar: AppBar(
+      appBar: AppBar(// 9851 1473 6364
         title: const Text('Walk-in Booking'),
         backgroundColor: Colors.white,
         elevation: 0,

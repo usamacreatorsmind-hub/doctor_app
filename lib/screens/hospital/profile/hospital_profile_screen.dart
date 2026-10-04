@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
+import '../../../widgets/address_autocomplete_field.dart';
 import 'hospital_profile_controller.dart';
 
 class HospitalProfileScreen extends GetView<HospitalProfileController> {
@@ -20,15 +21,8 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
         foregroundColor: Colors.white,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => Get.toNamed(AppRoutes.notifications),
-          ),
-          IconButton(
-            onPressed: controller.logout,
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Logout',
-          ),
+          IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () => Get.toNamed(AppRoutes.notifications)),
+          IconButton(onPressed: controller.logout, icon: const Icon(Icons.logout_rounded), tooltip: 'Logout'),
           const SizedBox(width: 8),
         ],
       ),
@@ -80,12 +74,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                           keyboardType: TextInputType.emailAddress,
                           validator: (v) => v!.isEmpty ? 'Email required' : null,
                         ),
-                        _buildTextField(
-                          controller.websiteController,
-                          'Website',
-                          Icons.language_rounded,
-                          keyboardType: TextInputType.url,
-                        ),
+                        _buildTextField(controller.websiteController, 'Website', Icons.language_rounded, keyboardType: TextInputType.url),
                       ],
                     ),
                     _buildSectionCard(
@@ -102,21 +91,23 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
-                        Obx(() => controller.latitude.value != null
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text(
-                                  "📍 Location Saved: ${controller.latitude.value!.toStringAsFixed(4)}, ${controller.longitude.value!.toStringAsFixed(4)}",
-                                  style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
-                                ),
-                              )
-                            : const SizedBox.shrink()),
+                        Obx(
+                          () => controller.latitude.value != null
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "📍 Location Saved: ${controller.latitude.value!.toStringAsFixed(4)}, ${controller.longitude.value!.toStringAsFixed(4)}",
+                                    style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
                         const SizedBox(height: 16),
-                        _buildTextField(
-                          controller.addressController,
-                          'Full Address *',
-                          Icons.location_on_rounded,
-                          validator: (v) => v!.isEmpty ? 'Address required' : null,
+                        AddressAutocompleteField(
+                          label: 'Full Address *',
+                          hint: 'Start typing area (e.g. Boring Road, Gomti Nagar)...',
+                          controller: controller.addressController,
+                          validator: (v) => (v == null || v.isEmpty) ? 'Address required' : null,
                         ),
                         _buildTextField(
                           controller.cityController,
@@ -142,60 +133,28 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                     ),
                     _buildSectionCard(
                       title: 'Departments',
-                      children: [
-                        _buildDepartmentMultiSelect(),
-                        const SizedBox(height: 12),
-                        _buildCustomDepartmentInput(),
-                      ],
+                      children: [_buildDepartmentMultiSelect(), const SizedBox(height: 12), _buildCustomDepartmentInput()],
                     ),
                     _buildSectionCard(
                       title: 'Working Hours & Services',
                       children: [
                         Row(
                           children: [
-                            Expanded(
-                              child: _buildTimePicker(
-                                context,
-                                'Opening Time',
-                                controller.openingTime,
-                                true,
-                              ),
-                            ),
+                            Expanded(child: _buildTimePicker(context, 'Opening Time', controller.openingTime, true)),
                             const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildTimePicker(
-                                context,
-                                'Closing Time',
-                                controller.closingTime,
-                                false,
-                              ),
-                            ),
+                            Expanded(child: _buildTimePicker(context, 'Closing Time', controller.closingTime, false)),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _buildSwitchTile(
-                          'Emergency Services (24/7)',
-                          controller.emergencyAvailable,
-                        ),
-                        _buildDropdownField('Status', controller.selectedStatus, [
-                          'active',
-                          'inactive',
-                        ]),
+                        _buildSwitchTile('Emergency Services (24/7)', controller.emergencyAvailable),
+                        _buildDropdownField('Status', controller.selectedStatus, ['active', 'inactive']),
                       ],
                     ),
                     _buildSectionCard(
                       title: 'Legal & Policies',
                       children: [
-                        _buildLegalTile(
-                          'Privacy Policy',
-                          Icons.privacy_tip_outlined,
-                          LauncherHelper.launchPrivacyPolicy,
-                        ),
-                        _buildLegalTile(
-                          'Terms & Conditions',
-                          Icons.description_outlined,
-                          LauncherHelper.launchTermsConditions,
-                        ),
+                        _buildLegalTile('Privacy Policy', Icons.privacy_tip_outlined, LauncherHelper.launchPrivacyPolicy),
+                        _buildLegalTile('Terms & Conditions', Icons.description_outlined, LauncherHelper.launchTermsConditions),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -237,9 +196,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                 border: Border.all(color: AppColors.primary, width: 2),
                 image: image != null ? DecorationImage(image: image, fit: BoxFit.cover) : null,
               ),
-              child: image == null
-                  ? const Icon(Icons.local_hospital_rounded, size: 60, color: AppColors.primary)
-                  : null,
+              child: image == null ? const Icon(Icons.local_hospital_rounded, size: 60, color: AppColors.primary) : null,
             );
           }),
           Positioned(
@@ -267,24 +224,14 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
           ...children,
@@ -313,10 +260,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
           prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
           filled: true,
           fillColor: AppColors.bgPage.withOpacity(0.5),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
@@ -335,10 +279,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
             labelText: label,
             filled: true,
             fillColor: AppColors.bgPage.withOpacity(0.5),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
@@ -350,10 +291,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Select Departments *',
-          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-        ),
+        const Text('Select Departments *', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
         const SizedBox(height: 8),
         Obx(
           () => Wrap(
@@ -368,17 +306,11 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : AppColors.primarySurface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.primary.withOpacity(0.3),
-                    ),
+                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
                   ),
                   child: Text(
                     dept,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(color: isSelected ? Colors.white : AppColors.primary, fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ),
               );
@@ -386,9 +318,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
           ),
         ),
         Obx(() {
-          final customDepts = controller.selectedDepartments
-              .where((d) => !controller.allDepartments.contains(d))
-              .toList();
+          final customDepts = controller.selectedDepartments.where((d) => !controller.allDepartments.contains(d)).toList();
           if (customDepts.isEmpty) return const SizedBox.shrink();
           return Padding(
             padding: const EdgeInsets.only(top: 8.0),
@@ -399,10 +329,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
                   .map(
                     (dept) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -435,10 +362,7 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
               hintStyle: const TextStyle(fontSize: 13),
               filled: true,
               fillColor: AppColors.bgPage.withOpacity(0.5),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
             ),
           ),
@@ -462,20 +386,12 @@ class HospitalProfileScreen extends GetView<HospitalProfileController> {
           onTap: () => controller.selectTime(context, isOpening),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              color: AppColors.bgPage.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: AppColors.bgPage.withOpacity(0.5), borderRadius: BorderRadius.circular(12)),
             child: Row(
               children: [
                 const Icon(Icons.access_time_rounded, size: 18, color: AppColors.primary),
                 const SizedBox(width: 10),
-                Obx(
-                  () => Text(
-                    timeObs.value,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                ),
+                Obx(() => Text(timeObs.value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
               ],
             ),
           ),

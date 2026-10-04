@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../models/user_model.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_routes.dart';
+import '../../../utils/helper.dart';
 import '../../../models/appointment_model.dart';
 import '../../../models/patient_profile_model.dart';
 import 'doctor_dashboard_controller.dart';
@@ -611,14 +612,17 @@ class DoctorDashboardScreen extends GetView<DoctorDashboardController> {
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white24,
-                  backgroundImage: (profile?.photoUrl != null && profile!.photoUrl!.isNotEmpty) ? NetworkImage(profile.photoUrl!) : null,
-                  child: (profile?.photoUrl == null || profile!.photoUrl!.isEmpty)
-                      ? const Icon(Icons.person, color: Colors.white, size: 30)
-                      : null,
-                ),
+                (() {
+                  final imageProvider = getImageProvider(profile?.photoUrl);
+                  return CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white24,
+                    backgroundImage: imageProvider,
+                    child: imageProvider == null
+                        ? const Icon(Icons.person, color: Colors.white, size: 30)
+                        : null,
+                  );
+                })(),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
