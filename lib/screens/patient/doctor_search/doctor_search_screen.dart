@@ -4,6 +4,7 @@ import '../../../utils/app_colors.dart';
 import '../../../utils/helper.dart';
 import '../../../models/doctor_model.dart';
 import '../../../widgets/animated_search_hint.dart';
+import '../../../widgets/doctor_profile_card.dart';
 import 'doctor_search_controller.dart';
 
 class DoctorSearchScreen extends GetView<DoctorSearchController> {
@@ -106,12 +107,7 @@ class DoctorSearchScreen extends GetView<DoctorSearchController> {
   }
 
   Widget _buildSearchBar() {
-    final hints = [
-      'Search Doctor',
-      'Search Disease',
-      'Search Hospital',
-      'Search Symptoms',
-    ];
+    final hints = ['Search Doctor', 'Search Disease', 'Search Hospital', 'Search Symptoms'];
 
     return Container(
       color: Colors.white,
@@ -356,5 +352,3 @@ class _DoctorResultCard extends StatelessWidget {
     );
   }
 }
-
-

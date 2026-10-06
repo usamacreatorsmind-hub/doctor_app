@@ -6,6 +6,7 @@ import '../../../utils/app_routes.dart';
 import '../../../utils/helper.dart';
 import '../../../models/doctor_model.dart';
 import '../../../widgets/animated_search_hint.dart';
+import '../../../widgets/doctor_profile_card.dart';
 import '../doctor_search/doctor_search_screen.dart';
 import '../appointments/patient_appointments_screen.dart';
 import '../patient_profile/patient_profile_screen.dart';

@@ -213,16 +213,9 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                             const SizedBox(height: 6),
                             DropdownButtonFormField<int>(
                               value: controller.consultationDuration.value,
-                              items: const [
-                                DropdownMenuItem(value: 1, child: Text('1 Minute (Minimum)')),
-                                DropdownMenuItem(value: 5, child: Text('5 Minutes')),
-                                DropdownMenuItem(value: 10, child: Text('10 Minutes')),
-                                DropdownMenuItem(value: 15, child: Text('15 Minutes')),
-                                DropdownMenuItem(value: 20, child: Text('20 Minutes')),
-                                DropdownMenuItem(value: 30, child: Text('30 Minutes')),
-                                DropdownMenuItem(value: 45, child: Text('45 Minutes')),
-                                DropdownMenuItem(value: 60, child: Text('60 Minutes')),
-                              ],
+                              items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+                                  .map((e) => DropdownMenuItem(value: e, child: Text(e == 1 ? '1 Minute (Minimum)' : '$e Minutes')))
+                                  .toList(),
                               onChanged: (val) {
                                 if (val != null) controller.consultationDuration.value = val;
                               },

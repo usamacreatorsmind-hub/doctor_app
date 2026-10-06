@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../utils/app_colors.dart';
-import '../../../utils/helper.dart';
+import '../../../widgets/doctor_profile_card.dart';
 import 'doctor_profile_controller.dart';
 import 'package:intl/intl.dart';
 
@@ -46,7 +46,11 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                       const SizedBox(height: 20),
                       _buildSectionCard(
                         title: 'Languages Known',
-                        child: Wrap(spacing: 8, runSpacing: 8, children: controller.doctor.languagesKnown.map((l) => _chip(l, color: Colors.teal)).toList()),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: controller.doctor.languagesKnown.map((l) => _chip(l, color: Colors.teal)).toList(),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 24),
@@ -75,7 +79,10 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -84,130 +91,23 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
   }
 
   Widget _buildAppBar() {
-    final imageProvider = getImageProvider(controller.doctor.photoUrl);
-
     return SliverAppBar(
-      expandedHeight: 320,
       pinned: true,
       elevation: 0,
-      backgroundColor: AppColors.primary,
-      iconTheme: const IconThemeData(color: Colors.white),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            imageProvider != null
-                ? Image(image: imageProvider, fit: BoxFit.cover)
-                : Container(
-                    color: AppColors.primarySurface,
-                    child: const Icon(Icons.person, size: 120, color: AppColors.primary),
-                  ),
-            // Bottom shadow overlay
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.5)],
-                    stops: const [0.7, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: Colors.white,
+      foregroundColor: AppColors.textPrimary,
+      title: Text(controller.doctor.doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      centerTitle: true,
     );
   }
 
   Widget _buildDoctorBasicInfo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          controller.doctor.doctorName,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.verified_rounded, color: Colors.blue, size: 20),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    controller.doctor.qualification.join(", "),
-                    style: TextStyle(fontSize: 12, color: AppColors.primary.withOpacity(0.8), fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    controller.doctor.specialization.join(", "),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-            // Compact Circular Navigation Button
-            _buildCircularNavigationButton(),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Obx(
-          () => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primarySurface,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.location_on_rounded, size: 14, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    controller.hospitalName.value.isEmpty ? 'Loading hospital...' : controller.hospitalName.value,
-                    style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCircularNavigationButton() {
-    return InkWell(
-      onTap: controller.onNavigateDirections,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.green.shade100, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.green.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.navigation, color: Colors.green, size: 26),
+    return Obx(
+      () => DoctorProfileCard(
+        doctor: controller.doctor,
+        hospitalName: controller.hospitalName.value,
+        onBookNow: controller.isAdminView.value ? controller.onViewSchedule : controller.onBookAppointment,
+        showButton: false,
       ),
     );
   }
@@ -250,8 +150,14 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                 child: Icon(icon, color: color, size: 20),
               ),
               const SizedBox(height: 10),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
-              Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w500)),
+              Text(
+                value,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+              ),
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w500),
+              ),
             ],
           ),
         ),
@@ -273,9 +179,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
       }
 
       final bool hasClinicName = controller.doctor.clinicName != null && controller.doctor.clinicName!.isNotEmpty;
-      final String headerTitle = hasClinicName
-          ? controller.doctor.clinicName!
-          : (hName.isNotEmpty ? hName : 'Practice Location');
+      final String headerTitle = hasClinicName ? controller.doctor.clinicName! : (hName.isNotEmpty ? hName : 'Practice Location');
 
       return _buildSectionCard(
         title: 'Practice Location & Address',
@@ -302,10 +206,7 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                   const Icon(Icons.location_on_rounded, size: 18, color: Colors.redAccent),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      displayAddr,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-                    ),
+                    child: Text(displayAddr, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4)),
                   ),
                 ],
               ),
@@ -361,7 +262,10 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Patient Reviews', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const Text(
+              'Patient Reviews',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
             Obx(
               () => Text(
                 '${controller.reviews.length} reviews',
@@ -441,7 +345,10 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
                             children: [
                               const Icon(Icons.star_rounded, color: Colors.orange, size: 14),
                               const SizedBox(width: 4),
-                              Text(review.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange)),
+                              Text(
+                                review.rating.toString(),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange),
+                              ),
                             ],
                           ),
                         ),
@@ -477,7 +384,10 @@ class DoctorProfileScreen extends GetView<DoctorProfileController> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Consultation Fee', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500)),
+                const Text(
+                  'Consultation Fee',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '₹${controller.doctor.consultationFee.toInt()}',
