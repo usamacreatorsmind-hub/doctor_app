@@ -207,10 +207,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
             children: [
               _infoTile(Icons.phone_android_rounded, 'Mobile', profile.mobileNumber),
               _infoTile(Icons.email_rounded, 'Email', profile.email),
-              if (profile.practiceType == 'clinic')
-                _infoTile(Icons.home_work_rounded, 'My Clinic', profile.clinicName ?? 'N/A')
-              else
-                _buildHospitalViewChips('Associated Hospitals', profile.hospitalIds),
+              _infoTile(Icons.local_hospital_rounded, 'Hospital Name', profile.hospitalName.isNotEmpty ? profile.hospitalName : (profile.clinicName ?? 'N/A')),
             ],
           ),
         ),
@@ -301,37 +298,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     );
   }
 
-  Widget _buildHospitalViewChips(String title, List<String> hIds) {
-    if (hIds.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: hIds.map((id) {
-            final hName = controller.hospitals.firstWhereOrNull((h) => h.hospitalId == id)?.hospitalName ?? id;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(10)),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.local_hospital_rounded, color: Colors.blueGrey, size: 14),
-                  const SizedBox(width: 8),
-                  Text(
-                    hName,
-                    style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildViewChips(String title, List<String> items, Color color) {
     final filteredItems = items.where((i) => i.isNotEmpty).toList();
@@ -516,10 +483,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
                 );
               }),
               const SizedBox(height: 12),
-              if (controller.doctorProfile.value?.practiceType == 'clinic')
-                _buildTextField('Clinic Name', controller.clinicNameController, Icons.local_pharmacy_outlined)
-              else
-                _buildHospitalSelection(),
+              _buildTextField('Hospital Name', controller.hospitalNameController, Icons.local_hospital_rounded),
             ],
           ),
         ),
@@ -682,70 +646,7 @@ class DoctorSelfProfileScreen extends GetView<DoctorSelfProfileController> {
     );
   }
 
-  Widget _buildHospitalSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Select Hospitals (Multiple)',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Obx(() {
-          if (controller.hospitals.isEmpty) {
-            return const Text('No hospitals found', style: TextStyle(fontSize: 12, color: AppColors.textSecondary));
-          }
 
-          final unselected = controller.hospitals.where((h) => !controller.selectedHospitalIds.contains(h.hospitalId)).toList();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              InputDecorator(
-                decoration: _inputDecoration('Select Hospital', Icons.local_hospital_rounded),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: null,
-                    isExpanded: true,
-                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                    hint: const Text('Choose Hospital', style: TextStyle(fontSize: 14, color: AppColors.textHint)),
-                    items: unselected.map((h) {
-                      return DropdownMenuItem(
-                        value: h.hospitalId,
-                        child: Text(h.hospitalName, style: const TextStyle(fontSize: 14)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) controller.toggleSelection(controller.selectedHospitalIds, val);
-                    },
-                  ),
-                ),
-              ),
-              if (controller.selectedHospitalIds.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: controller.selectedHospitalIds.map((id) {
-                    final h = controller.hospitals.firstWhereOrNull((h) => h.hospitalId == id);
-                    return Chip(
-                      label: Text(h?.hospitalName ?? id, style: const TextStyle(fontSize: 12, color: Colors.white)),
-                      backgroundColor: AppColors.primary,
-                      deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
-                      onDeleted: () => controller.toggleSelection(controller.selectedHospitalIds, id),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      side: BorderSide.none,
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-          );
-        }),
-      ],
-    );
-  }
 
   Widget _buildChipSection(String title, RxList<String> availableList, RxList<String> selectedList, Color activeColor, IconData icon) {
     return Column(

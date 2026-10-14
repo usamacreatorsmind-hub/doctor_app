@@ -33,7 +33,6 @@ class DoctorSelfProfileController extends GetxController {
   final fetchedAddress = ''.obs;
 
   // Master Data Lists
-  final hospitals = <HospitalModel>[].obs;
   final availableSpecializations = <String>[].obs;
   final availableQualifications = <String>[].obs;
   final availableSymptoms = <String>[].obs;
@@ -48,9 +47,9 @@ class DoctorSelfProfileController extends GetxController {
   late TextEditingController mobileController;
   late TextEditingController clinicNameController;
   late TextEditingController addressController;
+  late TextEditingController hospitalNameController;
 
   // Selected values
-  final selectedHospitalIds = <String>[].obs;
   final selectedSpecializations = <String>[].obs;
   final selectedQualifications = <String>[].obs;
   final selectedSymptoms = <String>[].obs;
@@ -73,6 +72,7 @@ class DoctorSelfProfileController extends GetxController {
     mobileController = TextEditingController();
     clinicNameController = TextEditingController();
     addressController = TextEditingController();
+    hospitalNameController = TextEditingController();
     loadInitialData();
   }
 
@@ -85,6 +85,7 @@ class DoctorSelfProfileController extends GetxController {
     mobileController.dispose();
     clinicNameController.dispose();
     addressController.dispose();
+    hospitalNameController.dispose();
     super.onClose();
   }
 
@@ -107,18 +108,16 @@ class DoctorSelfProfileController extends GetxController {
     update();
     try {
       final results = await Future.wait([
-        _firestoreService.getAllHospitals(),
         _firestoreService.getSpecializations(),
         _firestoreService.getSymptoms(),
         _firestoreService.getDiseases(),
         _firestoreService.getQualifications(),
       ]);
 
-      hospitals.assignAll(results[0] as List<HospitalModel>);
-      availableSpecializations.assignAll(results[1] as List<String>);
-      availableSymptoms.assignAll(results[2] as List<String>);
-      availableDiseases.assignAll(results[3] as List<String>);
-      availableQualifications.assignAll(results[4] as List<String>);
+      availableSpecializations.assignAll(results[0] as List<String>);
+      availableSymptoms.assignAll(results[1] as List<String>);
+      availableDiseases.assignAll(results[2] as List<String>);
+      availableQualifications.assignAll(results[3] as List<String>);
     } catch (e) {
       print("Error fetching master data: $e");
     } finally {
@@ -182,6 +181,7 @@ class DoctorSelfProfileController extends GetxController {
     bioController.text = profile.biography ?? '';
     mobileController.text = profile.mobileNumber;
     clinicNameController.text = profile.clinicName ?? '';
+    hospitalNameController.text = profile.hospitalName.isNotEmpty ? profile.hospitalName : (profile.clinicName ?? '');
     addressController.text = profile.address ?? '';
     fetchedAddress.value = profile.address ?? '';
 
@@ -189,7 +189,6 @@ class DoctorSelfProfileController extends GetxController {
     selectedConsultationMode.value = profile.consultationMode;
     consultationDuration.value = profile.consultationDuration;
 
-    selectedHospitalIds.assignAll(profile.hospitalIds);
     selectedSpecializations.assignAll(profile.specialization);
     selectedQualifications.assignAll(profile.qualification);
     selectedLanguages.assignAll(profile.languagesKnown);
@@ -375,6 +374,11 @@ class DoctorSelfProfileController extends GetxController {
   Future<void> updateProfile() async {
     if (doctorProfile.value == null) return;
 
+    if (hospitalNameController.text.trim().isEmpty) {
+      AppSnackBar.show('Please enter hospital name');
+      return;
+    }
+
     if (selectedQualifications.isEmpty) {
       AppSnackBar.show('Please select at least one qualification');
       return;
@@ -415,8 +419,9 @@ class DoctorSelfProfileController extends GetxController {
         'languagesKnown': selectedLanguages.toList(),
         'biography': bioController.text.trim(),
         'consultationMode': selectedConsultationMode.value,
-        'hospitalIds': selectedHospitalIds.toList(),
-        'hospitalId': selectedHospitalIds.isNotEmpty ? selectedHospitalIds.first : '',
+        'hospitalIds': [],
+        'hospitalId': '',
+        'hospitalName': hospitalNameController.text.trim(),
         'clinicName': clinicNameController.text.trim(),
         'address': addressController.text.trim(),
         'clinicAddress': addressController.text.trim(),

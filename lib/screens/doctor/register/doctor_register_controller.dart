@@ -34,7 +34,7 @@ class DoctorRegisterController extends GetxController {
   final feeController = TextEditingController();
   final bookingFeeController = TextEditingController(text: '50');
   final bioController = TextEditingController();
-  final clinicNameController = TextEditingController();
+  final hospitalNameController = TextEditingController();
 
   // Address Controllers for Clinic
   final addressController = TextEditingController();
@@ -50,17 +50,11 @@ class DoctorRegisterController extends GetxController {
   final isMasterLoading = false.obs;
   final isPasswordHidden = true.obs;
 
-  final practiceType = 'hospital'.obs; // 'hospital' or 'clinic'
-
-  // Multiple Hospitals Selection
-  final selectedHospitalIds = <String>[].obs;
-
   final selectedGender = 'male'.obs;
   final selectedConsultationMode = 'Offline'.obs; // Default to Offline
   final consultationDuration = 15.obs; // In minutes (min 1 min)
 
   // Master Data Lists (Fetched from Firestore)
-  final hospitals = <HospitalModel>[].obs;
   final availableSpecializations = <String>[].obs;
   final availableQualifications = <String>[].obs; // Added
   final availableSymptoms = <String>[].obs;
@@ -79,32 +73,39 @@ class DoctorRegisterController extends GetxController {
     fetchInitialData();
   }
 
+  @override
+  void onClose() {
+    hospitalNameController.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    mobileController.dispose();
+    passwordController.dispose();
+    experienceController.dispose();
+    feeController.dispose();
+    bookingFeeController.dispose();
+    bioController.dispose();
+    addressController.dispose();
+    cityController.dispose();
+    stateController.dispose();
+    pincodeController.dispose();
+    super.onClose();
+  }
+
   Future<void> fetchInitialData() async {
     isMasterLoading.value = true;
     update();
     try {
       final results = await Future.wait([
-        _firestoreService.getAllHospitals(),
         _firestoreService.getSpecializations(),
         _firestoreService.getSymptoms(),
         _firestoreService.getDiseases(),
         _firestoreService.getQualifications(), // Added
       ]);
 
-      hospitals.assignAll(results[0] as List<HospitalModel>);
-
-      availableSpecializations.assignAll(results[1] as List<String>);
-      availableSymptoms.assignAll(results[2] as List<String>);
-      availableDiseases.assignAll(results[3] as List<String>);
-      availableQualifications.assignAll(results[4] as List<String>);
-
-      print("DataGets hospitals  ${hospitals}");
-      print("DataGets hospitals  ${availableSpecializations}");
-      print("DataGets hospitals  ${availableSymptoms}");
-      print("DataGets hospitals  ${availableDiseases}");
-      print("DataGets hospitals  ${availableQualifications}");
-
-      // Added
+      availableSpecializations.assignAll(results[0] as List<String>);
+      availableSymptoms.assignAll(results[1] as List<String>);
+      availableDiseases.assignAll(results[2] as List<String>);
+      availableQualifications.assignAll(results[3] as List<String>);
     } catch (e) {
       print("Error fetching master data: $e");
     } finally {
@@ -189,35 +190,9 @@ class DoctorRegisterController extends GetxController {
     }
   }
 
-  @override
-  void onClose() {
-    nameController.dispose();
-    emailController.dispose();
-    mobileController.dispose();
-    passwordController.dispose();
-    experienceController.dispose();
-    feeController.dispose();
-    bookingFeeController.dispose();
-    bioController.dispose();
-    clinicNameController.dispose();
-    addressController.dispose();
-    cityController.dispose();
-    stateController.dispose();
-    pincodeController.dispose();
-    super.onClose();
-  }
-
   void togglePasswordVisibility() => isPasswordHidden.value = !isPasswordHidden.value;
   void selectGender(String val) => selectedGender.value = val;
   void selectMode(String val) => selectedConsultationMode.value = val;
-
-  void toggleHospital(String hospitalId) {
-    if (selectedHospitalIds.contains(hospitalId)) {
-      selectedHospitalIds.remove(hospitalId);
-    } else {
-      selectedHospitalIds.add(hospitalId);
-    }
-  }
 
   void toggleSelection(RxList<String> list, String value) {
     if (list.contains(value)) {
@@ -304,13 +279,8 @@ class DoctorRegisterController extends GetxController {
   Future<void> onRegisterPressed() async {
     if (!formKey.currentState!.validate()) return;
 
-    if (practiceType.value == 'hospital' && selectedHospitalIds.isEmpty) {
-      AppSnackBar.show('Please select at least one hospital');
-      return;
-    }
-
-    if (practiceType.value == 'clinic' && clinicNameController.text.trim().isEmpty) {
-      AppSnackBar.show('Please enter your clinic name');
+    if (hospitalNameController.text.trim().isEmpty) {
+      AppSnackBar.show('Please enter hospital name');
       return;
     }
 
@@ -346,43 +316,13 @@ class DoctorRegisterController extends GetxController {
           }
         }
 
-        String finalHospitalId = '';
-        List<String> finalHospitalIds = [];
-
-        if (practiceType.value == 'clinic') {
-          // Create a new Hospital record for the individual clinic
-          final clinic = HospitalModel(
-            hospitalId: '',
-            adminUserId: uid,
-            hospitalName: clinicNameController.text.trim(),
-            registrationNo: 'CLINIC-${DateTime.now().millisecondsSinceEpoch}',
-            address: addressController.text.trim().isEmpty ? 'To be updated' : addressController.text.trim(),
-            city: cityController.text.trim().isEmpty ? 'To be updated' : cityController.text.trim(),
-            state: stateController.text.trim().isEmpty ? 'To be updated' : stateController.text.trim(),
-            pincode: pincodeController.text.trim(),
-            contactNumber: mobileController.text.trim(),
-            email: emailController.text.trim(),
-            departments: selectedSpecializations.toList(),
-            workingHours: {'open': '09:00 AM', 'close': '08:00 PM'},
-            emergencyAvailable: false,
-            status: 'active',
-            createdAt: DateTime.now(),
-            latitude: latitude.value,
-            longitude: longitude.value,
-          );
-          finalHospitalId = await _firestoreService.createHospital(clinic);
-          finalHospitalIds = [finalHospitalId];
-        } else {
-          finalHospitalId = selectedHospitalIds.first;
-          finalHospitalIds = selectedHospitalIds.toList();
-        }
-
         // 2. Create Doctor Profile
         final doctor = DoctorModel(
           doctorId: '',
           uid: uid,
-          hospitalId: finalHospitalId,
-          hospitalIds: finalHospitalIds,
+          hospitalId: '',
+          hospitalIds: [],
+          hospitalName: hospitalNameController.text.trim(),
           doctorName: nameController.text.trim(),
           qualification: selectedQualifications.toList(),
           specialization: selectedSpecializations.toList(),
@@ -398,9 +338,8 @@ class DoctorRegisterController extends GetxController {
           symptomsCovered: selectedSymptoms.toList(),
           diseasesCovered: selectedDiseases.toList(),
           consultationMode: selectedConsultationMode.value,
-          status: practiceType.value == 'clinic' ? 'active' : 'pending',
-          practiceType: practiceType.value,
-          clinicName: practiceType.value == 'clinic' ? clinicNameController.text.trim() : null,
+          status: 'active',
+          practiceType: 'hospital',
           createdAt: DateTime.now(),
           latitude: latitude.value,
           longitude: longitude.value,
@@ -416,33 +355,15 @@ class DoctorRegisterController extends GetxController {
           mobile: mobileController.text.trim(),
           email: emailController.text.trim(),
           role: 'doctor',
-          status: practiceType.value == 'clinic' ? 'active' : 'pending',
+          status: 'active',
           doctorId: doctorId,
-          hospitalId: finalHospitalId,
+          hospitalId: '',
           createdAt: DateTime.now(),
         );
 
         await _firestoreService.createUser(userModel);
 
-        // 4. Create Join Requests (Only for Hospital path)
-        if (practiceType.value == 'hospital') {
-          for (String hId in selectedHospitalIds) {
-            await _firestoreService.createJoinRequest({
-              'doctorId': doctorId,
-              'doctorUid': uid,
-              'hospitalId': hId,
-              'doctorName': doctor.doctorName,
-              'specialization': doctor.specialization,
-              'doctorEmail': doctor.email,
-              'doctorMobile': doctor.mobileNumber,
-              'status': 'pending',
-            });
-          }
-          AppSnackBar.show('Registration successful! Please wait for admin approval.');
-        } else {
-          AppSnackBar.show('Registration successful! Your clinic profile is ready.');
-        }
-
+        AppSnackBar.show('Registration successful!');
         Get.offAllNamed(AppRoutes.login, arguments: {'role': LoginRole.doctor});
       }
     } catch (e) {

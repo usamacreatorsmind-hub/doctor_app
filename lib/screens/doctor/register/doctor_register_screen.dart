@@ -68,20 +68,12 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
                         _sectionTitle('Professional Details'),
                         const SizedBox(height: 12),
 
-                        _buildPracticeTypeSelector(),
-                        const SizedBox(height: 16),
-
-                        Obx(
-                          () => controller.practiceType.value == 'hospital'
-                              ? _buildHospitalSelection()
-                              : _buildInputField(
-                                  label: 'Clinic Name',
-                                  hint: 'e.g. Life Care Clinic',
-                                  icon: Icons.local_pharmacy_outlined,
-                                  controller: controller.clinicNameController,
-                                  validator: (v) =>
-                                      (controller.practiceType.value == 'clinic' && (v == null || v.isEmpty)) ? 'Enter clinic name' : null,
-                                ),
+                        _buildInputField(
+                          label: 'Hospital / Clinic Name',
+                          hint: 'e.g. City Care Hospital, AIIMS',
+                          icon: Icons.local_hospital_rounded,
+                          controller: controller.hospitalNameController,
+                          validator: (v) => (v == null || v.isEmpty) ? 'Enter hospital name' : null,
                         ),
                         const SizedBox(height: 14),
                         AddressAutocompleteField(
@@ -372,73 +364,7 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
     );
   }
 
-  Widget _buildHospitalSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Select Hospitals (Multiple)',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Obx(() {
-          if (controller.hospitals.isEmpty) {
-            return const Text('No hospitals found', style: TextStyle(fontSize: 12, color: AppColors.textSecondary));
-          }
 
-          final unselected = controller.hospitals.where((h) => !controller.selectedHospitalIds.contains(h.hospitalId)).toList();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 50,
-                child: InputDecorator(
-                  decoration: _inputDecoration('Select Hospital', Icons.local_hospital_rounded),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: null,
-                      isExpanded: true,
-                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                      hint: const Text('Choose Hospital', style: TextStyle(fontSize: 14, color: AppColors.textHint)),
-                      items: unselected.map((h) {
-                        return DropdownMenuItem(
-                          value: h.hospitalId,
-                          child: Text(h.hospitalName, style: const TextStyle(fontSize: 14)),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) controller.toggleHospital(val);
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              if (controller.selectedHospitalIds.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: controller.selectedHospitalIds.map((id) {
-                    final h = controller.hospitals.firstWhere((h) => h.hospitalId == id);
-                    return Chip(
-                      label: Text(h.hospitalName, style: const TextStyle(fontSize: 12, color: Colors.white)),
-                      backgroundColor: AppColors.primary,
-                      deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
-                      onDeleted: () => controller.toggleHospital(id),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-          );
-        }),
-      ],
-    );
-  }
 
   Widget _buildChipSection(String title, RxList<String> availableList, RxList<String> selectedList, Color activeColor, IconData icon) {
     return Column(
@@ -529,39 +455,7 @@ class DoctorRegisterScreen extends GetView<DoctorRegisterController> {
     );
   }
 
-  Widget _buildPracticeTypeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'I practice at',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Obx(
-          () => Row(
-            children: [
-              _selectionOption(
-                'hospital',
-                Icons.business_rounded,
-                controller.practiceType.value == 'hospital',
-                (val) => controller.practiceType.value = val,
-                label: 'Hospital',
-              ),
-              const SizedBox(width: 12),
-              _selectionOption(
-                'clinic',
-                Icons.home_work_rounded,
-                controller.practiceType.value == 'clinic',
-                (val) => controller.practiceType.value = val,
-                label: 'Personal Clinic',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _selectionOption(String val, IconData icon, bool isSelected, Function(String) onTap, {String? label}) {
     return Expanded(

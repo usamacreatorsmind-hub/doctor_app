@@ -5,6 +5,7 @@ class DoctorModel {
   final String uid;
   final String hospitalId;
   final List<String> hospitalIds;
+  final String hospitalName;
   final String doctorName;
   final List<String> qualification;
   final List<String> specialization;
@@ -37,6 +38,7 @@ class DoctorModel {
     required this.uid,
     required this.hospitalId,
     required this.hospitalIds,
+    this.hospitalName = '',
     required this.doctorName,
     required this.qualification,
     required this.specialization,
@@ -108,6 +110,7 @@ class DoctorModel {
       uid: (map['uid']?.toString()) ?? (map['userId']?.toString()) ?? '',
       hospitalId: primaryHId,
       hospitalIds: hIds,
+      hospitalName: map['hospitalName']?.toString() ?? map['clinicName']?.toString() ?? '',
       doctorName: map['doctorName']?.toString() ?? '',
       qualification: quals,
       specialization: specs,
@@ -143,6 +146,7 @@ class DoctorModel {
       'userId': uid,
       'hospitalId': hospitalId,
       'hospitalIds': hospitalIds,
+      'hospitalName': hospitalName,
       'doctorName': doctorName,
       'qualification': qualification,
       'specialization': specialization,
@@ -177,6 +181,7 @@ class DoctorModel {
   DoctorModel copyWith({
     String? hospitalId,
     List<String>? hospitalIds,
+    String? hospitalName,
     String? status,
     String? photoUrl,
     String? address,
@@ -189,6 +194,7 @@ class DoctorModel {
       uid: uid,
       hospitalId: hospitalId ?? this.hospitalId,
       hospitalIds: hospitalIds ?? this.hospitalIds,
+      hospitalName: hospitalName ?? this.hospitalName,
       doctorName: doctorName,
       qualification: qualification,
       specialization: specialization,

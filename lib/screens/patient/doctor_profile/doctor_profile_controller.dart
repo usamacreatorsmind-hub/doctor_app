@@ -74,34 +74,41 @@ class DoctorProfileController extends GetxController {
 
   Future<void> _loadHospitalDetails() async {
     try {
-      final hospital = await _firestoreService.getHospital(doctor.hospitalId);
-      if (hospital != null) {
-        hospitalName.value = hospital.hospitalName;
-        final parts = [hospital.address, hospital.city, hospital.state, hospital.pincode]
-            .where((e) => e.isNotEmpty)
-            .toList();
-        hospitalAddress.value = parts.join(', ');
+      if (doctor.hospitalName.isNotEmpty) {
+        hospitalName.value = doctor.hospitalName;
+      }
+      if (doctor.hospitalId.isNotEmpty) {
+        final hospital = await _firestoreService.getHospital(doctor.hospitalId);
+        if (hospital != null) {
+          if (hospitalName.value.isEmpty) {
+            hospitalName.value = hospital.hospitalName;
+          }
+          final parts = [hospital.address, hospital.city, hospital.state, hospital.pincode]
+              .where((e) => e.isNotEmpty)
+              .toList();
+          hospitalAddress.value = parts.join(', ');
 
-        if (hospital.latitude != null && hospital.longitude != null) {
-          hospitalLatLng.value = {'lat': hospital.latitude!, 'lng': hospital.longitude!};
-          if (doctorAddress.value.isEmpty) {
-            try {
-              List<Placemark> placemarks = await placemarkFromCoordinates(hospital.latitude!, hospital.longitude!);
-              if (placemarks.isNotEmpty) {
-                Placemark place = placemarks[0];
-                List<String> pParts = [];
-                if (place.street != null && place.street!.isNotEmpty) pParts.add(place.street!);
-                if (place.subLocality != null && place.subLocality!.isNotEmpty) pParts.add(place.subLocality!);
-                if (place.locality != null && place.locality!.isNotEmpty) pParts.add(place.locality!);
-                if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) pParts.add(place.administrativeArea!);
-                if (place.postalCode != null && place.postalCode!.isNotEmpty) pParts.add(place.postalCode!);
+          if (hospital.latitude != null && hospital.longitude != null) {
+            hospitalLatLng.value = {'lat': hospital.latitude!, 'lng': hospital.longitude!};
+            if (doctorAddress.value.isEmpty) {
+              try {
+                List<Placemark> placemarks = await placemarkFromCoordinates(hospital.latitude!, hospital.longitude!);
+                if (placemarks.isNotEmpty) {
+                  Placemark place = placemarks[0];
+                  List<String> pParts = [];
+                  if (place.street != null && place.street!.isNotEmpty) pParts.add(place.street!);
+                  if (place.subLocality != null && place.subLocality!.isNotEmpty) pParts.add(place.subLocality!);
+                  if (place.locality != null && place.locality!.isNotEmpty) pParts.add(place.locality!);
+                  if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) pParts.add(place.administrativeArea!);
+                  if (place.postalCode != null && place.postalCode!.isNotEmpty) pParts.add(place.postalCode!);
 
-                if (pParts.isNotEmpty && hospitalAddress.value.isEmpty) {
-                  hospitalAddress.value = pParts.join(', ');
+                  if (pParts.isNotEmpty && hospitalAddress.value.isEmpty) {
+                    hospitalAddress.value = pParts.join(', ');
+                  }
                 }
+              } catch (e) {
+                debugPrint("Error reverse geocoding hospital coords: $e");
               }
-            } catch (e) {
-              debugPrint("Error reverse geocoding hospital coords: $e");
             }
           }
         }
